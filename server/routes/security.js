@@ -5,6 +5,7 @@ const { ValidationError } = require("sequelize");
 
 const router = new Router();
 
+/*
 router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ where: { email: req.body.email } });
@@ -42,6 +43,6 @@ router.post("/register", async (req, res) => {
       console.error(error);
     }
   }
-});
+});*/
 
 module.exports = router;

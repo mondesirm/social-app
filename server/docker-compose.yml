@@ -13,20 +13,6 @@ services:
       - mongo-data:/data/db
     working_dir: /usr/local/sampleCollections
 
-  server:
-    image: node:alpine
-    volumes:
-      - ./:/usr/local/server
-    working_dir: /usr/local/server
-    environment:
-      - PORT=${PORT}
-      - MONGO_URL=${MONGO_URL}
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-    ports:
-      - 127.0.0.1:3000:3000
-    command: npm start
-
   db:
     image: postgres:alpine
     volumes:

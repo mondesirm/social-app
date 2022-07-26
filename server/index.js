@@ -1,30 +1,35 @@
-const express = require("express");
-const ProductRouter = require("./routes/product");
-const UserRouter = require("./routes/user");
-const SecurityRouter = require("./routes/security");
-const PostRouter = require("./routes/post");
-const verifyToken = require("./middlewares/verifyToken");
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+
+// routes
+import AuthRoute from './routes/AuthRoute.js';
+import UserRoute from './routes/UserRoute.js';
+
 const app = express();
-const logger = require("./lib/logger");
 
-app.use(express.json());
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
+// middleware
+app.use(bodyParser.json({ limit: '30mb', extended: true }));
+app.use(bodyParser.urlencoded({ limit: '30mb', extended: true }));
+app.use(cors());
+// to serve images inside public folder
+app.use(express.static('public'));
+app.use('/images', express.static('images'));
 
-app.get("/", (req, res, next) => {
-  console.log("test");
-  res.json({
-    title: "coucou",
-  });
-});
+dotenv.config();
+const PORT = process.env.PORT;
 
-app.use("/", SecurityRouter);
+const CONNECTION = process.env.MONGODB_CONNECTION;
+mongoose
+	.connect(CONNECTION, { useNewUrlParser: true, useUnifiedTopology: true })
+	.then(() =>
+		app.listen(PORT, () =>
+			console.log(`Listening at https://localhost:${PORT}`)
+		)
+	)
+	.catch(error => console.log(`${error} did not connect`));
 
-app.use("/api", verifyToken, ProductRouter, UserRouter, PostRouter);
-
-app.listen(process.env.PORT, () => {
-  logger.info(`Server started on port ${process.env.PORT}`);
-});
+app.use('/auth', AuthRoute);
+app.use('/user', UserRoute);
