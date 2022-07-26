@@ -24,7 +24,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
     ports:
-      - 127.0.0.1:3000:3000
+      - 127.0.0.1:${PORT}:${PORT}
     command: npm start
 
   db:

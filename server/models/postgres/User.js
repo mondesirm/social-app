@@ -19,7 +19,11 @@ User.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    name: {
+    lastname: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    firstname: {
       type: DataTypes.STRING,
       allowNull: false,
     },
