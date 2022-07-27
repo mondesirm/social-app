@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import './FromUsersCard.css';
 import FromUsersModal from '../FromUsersModal/FromUsersModal';
-import { getAllUser } from '../../api/UserRequests';
+import { getAllUser, getUserFriends } from '../../api/UserRequests';
 import User from '../User/User';
 import { useSelector } from 'react-redux';
 const FromUsersCard = ({ location }) => {
@@ -12,10 +12,18 @@ const FromUsersCard = ({ location }) => {
 	const { user } = useSelector(state => state.authReducer.authData);
 
 	useEffect(() => {
+		const fetchFriends = async () => {
+			const { data } = await getUserFriends(user._id);
+			console.log(data);
+			setPersons(persons.concat(data));
+		};
+
 		const fetchPersons = async () => {
 			const { data } = await getAllUser();
-			setPersons(data);
+			console.log(data);
+			setPersons(persons.concat(data));
 		};
+		// fetchFriends();
 		fetchPersons();
 	}, []);
 

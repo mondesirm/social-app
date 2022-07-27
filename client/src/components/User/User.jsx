@@ -38,7 +38,7 @@ const User = ({ person }) => {
 				}
 				onClick={handleFollow}
 			>
-				{following ? 'Unfollow' : 'Follow'}
+				{following ? "Cancel" : "Add  friend"}
 			</button>
 		</div>
 	);

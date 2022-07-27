@@ -34,12 +34,12 @@ const ProfileCard = ({ location }) => {
 				<div>
 					<div className='follow'>
 						<span>{user.followers.length}</span>
-						<span>FromUsers</span>
+						<span>Amis</span>
 					</div>
 					<div className='vl'></div>
 					<div className='follow'>
 						<span>{user.following.length}</span>
-						<span>Following</span>
+						<span>Demande envoyées</span>
 					</div>
 				</div>
 				<hr />
