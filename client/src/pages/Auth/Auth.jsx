@@ -146,8 +146,8 @@ const Auth = () => {
               }}
             >
               {isSignUp
-                ? "Already have an account Login"
-                : "Don't have an account Sign up"}
+                ? "Already have an account?"
+                : "Not registered yet?"}
             </span>
             <button
               className="button infoButton"

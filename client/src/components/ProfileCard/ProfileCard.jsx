@@ -6,25 +6,16 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 const ProfileCard = ({ location }) => {
 	const { user } = useSelector(state => state.authReducer.authData);
-	const serverPublic = process.env.REACT_APP_PUBLIC_FOLDER;
 
 	return (
 		<div className='ProfileCard'>
 			<div className='ProfileImages'>
 				<img
-					src={
-						user.coverPicture
-							? serverPublic + user.coverPicture
-							: serverPublic + 'defaultCover.jpg'
-					}
+					src={'/images/defaultCover.jpg'}
 					alt='CoverImage'
 				/>
 				<img
-					src={
-						user.profilePicture
-							? serverPublic + user.profilePicture
-							: serverPublic + 'defaultProfile.png'
-					}
+					src={'/images/defaultProfile.png'}
 					alt='ProfileImage'
 				/>
 			</div>
@@ -33,7 +24,8 @@ const ProfileCard = ({ location }) => {
 					{user.firstname} {user.lastname}
 				</span>
 				<span>
-					{user.worksAt ? user.worksAt : 'Write about yourself'}
+					{/* {user.worksAt ? user.worksAt : 'Write about yourself'} */}
+					{/* TODO Add techs here */}
 				</span>
 			</div>
 
@@ -42,7 +34,7 @@ const ProfileCard = ({ location }) => {
 				<div>
 					<div className='follow'>
 						<span>{user.followers.length}</span>
-						<span>Followers</span>
+						<span>FromUsers</span>
 					</div>
 					<div className='vl'></div>
 					<div className='follow'>

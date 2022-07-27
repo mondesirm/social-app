@@ -6,7 +6,6 @@ const Home = () => {
   return (
     <div className="Home">
       <ProfileSide />
-      {/* TODO Chat */}
       <RightSide />
     </div>
   );

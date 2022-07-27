@@ -42,6 +42,35 @@
   transition: all 100ms ease-out;
 }
 
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--buttonBg);
+  transition: all 100ms ease-out;
+  width: 7rem;
+  height: 2rem;
+  text-decoration: none;
+  /* margin-bottom: 1em; */
+  border: 1px solid transparent;
+  margin-left: 1em;
+}
+
+.nav-button:hover {
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  cursor: pointer;
+  background: transparent;
+}
+
+.nav-button:disabled{
+  background: silver;
+  pointer-events: none;
+}
+
 .button:hover {
   color: var(--orange);
   border: 2px solid var(--orange);
