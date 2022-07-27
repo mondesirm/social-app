@@ -4,6 +4,7 @@ import async from 'async';
 import mongoose from 'mongoose';
 
 import User from './models/userModel.js';
+import Chat from './models/chatModel.js';
 import Tech from './models/techModel.js';
 
 // Get arguments passed on command line
@@ -23,6 +24,7 @@ var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 var users = [];
+var chats = [];
 var techs = [];
 
 function userCreate(username, password, firstname, lastname, isAdmin, followers, following, techs, cb) {
@@ -46,6 +48,22 @@ function userCreate(username, password, firstname, lastname, isAdmin, followers,
 		console.log('\n' + user.username + ':' + user._id);
 		users.push(user);
 		cb(null, user);
+	});
+}
+
+function chatCreate(members, cb) {
+	const chat = new Chat({
+		members: members
+	});
+
+	chat.save(function (err) {
+		if (err) {
+			cb(err, null);
+			return;
+		}
+
+		chats.push(chat);
+		cb(null, chat);
 	});
 }
 
@@ -79,6 +97,17 @@ function createUsers(cb) {
 	], cb);
 }
 
+function createChats(cb) {
+	async.series([
+		function (callback) {
+			chatCreate([users[0]._id, users[1]._id], callback);
+		},
+		function (callback) {
+			chatCreate([users[0]._id, users[2]._id], callback);
+		}
+	], cb);
+}
+
 function createTechs(cb) {
 	async.series([
 		function (callback) {
@@ -90,10 +119,11 @@ function createTechs(cb) {
 	], cb);
 }
 
-async.series([createTechs, createUsers], function (err, results) {
+async.series([createTechs, createUsers, createChats], function (err, results) {
 	if (err) console.log('\nFinal error: ' + err);
 	else {
 		console.log('\n' + users.length + ' user(s)');
+		console.log(chats.length + ' chat(s)');
 		console.log(techs.length + ' tech(s)');
 	}
 
