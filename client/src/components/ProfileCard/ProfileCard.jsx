@@ -1,9 +1,10 @@
 import React from 'react';
 import './ProfileCard.css';
-import Cover from '../../img/cover.jpg';
-import Profile from '../../img/profileImg.jpg';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import Select from 'react-select';
+import { programmingLanguageOptions } from '../../docs/data';
+
 const ProfileCard = ({ location }) => {
 	const { user } = useSelector(state => state.authReducer.authData);
 
@@ -24,8 +25,16 @@ const ProfileCard = ({ location }) => {
 					{user.firstname} {user.lastname}
 				</span>
 				<span>
-					{/* {user.worksAt ? user.worksAt : 'Write about yourself'} */}
-					{/* TODO Add techs here */}
+				<Select
+					isMulti 
+					name="languages"
+					value={(user.languages || []).map(language => ({ label: language }))}
+					options={programmingLanguageOptions}
+					closeMenuOnSelect={false}
+					className="basic-multi-select"
+					classNamePrefix="select"
+					isDisabled={true}
+				/>
 				</span>
 			</div>
 

@@ -6,13 +6,13 @@ import './ProfileModal.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { updateUser } from '../../actions/UserAction';
+import Select from 'react-select';
+import { programmingLanguageOptions } from '../../docs/data';
 
 const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
 	const theme = useMantineTheme();
 	const { password, ...other } = data;
 	const [formData, setFormData] = useState(other);
-	const [profileImage, setProfileImage] = useState(null);
-	const [coverImage, setCoverImage] = useState(null);
 	const dispatch = useDispatch();
 	const param = useParams();
 
@@ -21,33 +21,16 @@ const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
 	};
 
-	const onImageChange = event => {
-		if (event.target.files && event.target.files[0]) {
-			let img = event.target.files[0];
-			event.target.name === 'profileImage'
-				? setProfileImage(img)
-				: setCoverImage(img);
-		}
-	};
+	const handleChangeSelect = (options) => {
+		const languages = options.map((option) => option.label);
+		setFormData({ ...formData, ['languages']: languages });
+	  };
+
 
 	// form submission
 	const handleSubmit = e => {
 		e.preventDefault();
 		let UserData = formData;
-		if (profileImage) {
-			const data = new FormData();
-			const fileName = Date.now() + profileImage.name;
-			data.append('name', fileName);
-			data.append('file', profileImage);
-			UserData.profilePicture = fileName;
-		}
-		if (coverImage) {
-			const data = new FormData();
-			const fileName = Date.now() + coverImage.name;
-			data.append('name', fileName);
-			data.append('file', coverImage);
-			UserData.coverPicture = fileName;
-		}
 		dispatch(updateUser(param.id, UserData));
 		setModalOpened(false);
 	};
@@ -86,6 +69,17 @@ const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
 						className='infoInput'
 					/>
 				</div>
+
+				<Select
+					isMulti 
+					name="languages"
+					value={(formData.languages || []).map(language => ({ label: language }))}
+					options={programmingLanguageOptions}
+					closeMenuOnSelect={false}
+					className="basic-multi-select"
+					classNamePrefix="select"
+					onChange={handleChangeSelect}
+				/>
 
 				<button className='button infoButton' type='submit'>
 					Update

@@ -8,6 +8,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import * as UserApi from '../../api/UserRequests.js';
 import { logout } from '../../actions/AuthActions';
+import Select from 'react-select';
+import { programmingLanguageOptions } from '../../docs/data';
 
 const InfoCard = () => {
 	const dispatch = useDispatch();
@@ -75,6 +77,22 @@ const InfoCard = () => {
 					<b>Username </b>
 				</span>
 				<span>{profileUser.username}</span>
+			</div>
+
+			<div className='info'>
+				<span>
+					<b>Languages </b>
+				</span>
+				<span><Select
+					isMulti 
+					name="languages"
+					value={(profileUser.languages || []).map(language => ({ label: language }))}
+					options={programmingLanguageOptions}
+					closeMenuOnSelect={false}
+					className="basic-multi-select"
+					classNamePrefix="select"
+					isDisabled={true}
+				/></span>
 			</div>
 
 			<button className='button logout-button' onClick={handleLogOut}>

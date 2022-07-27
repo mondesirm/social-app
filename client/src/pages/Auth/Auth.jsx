@@ -4,6 +4,8 @@ import Logo from "../../img/logo.png";
 import { logIn, signUp } from "../../actions/AuthActions.js";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import Select from 'react-select';
+import { programmingLanguageOptions } from '../../docs/data';
 
 const Auth = () => {
   const initialState = {
@@ -12,6 +14,7 @@ const Auth = () => {
     username: "",
     password: "",
     confirmpass: "",
+    languages: [],
   };
   const loading = useSelector((state) => state.authReducer.loading);
   const navigate = useNavigate();
@@ -32,7 +35,12 @@ const Auth = () => {
 
   // handle Change in input
   const handleChange = (e) => {
-    setData({ ...data, [e.target.name]: e.target.value });
+      setData({ ...data, [e.target.name]: e.target.value });
+  };
+
+  const handleChangeSelect = (options) => {
+    const languages = options.map((option) => option.label);
+    setData({ ...data, ['languages']: languages });
   };
 
   // Form Submission
@@ -120,7 +128,20 @@ const Auth = () => {
                 onChange={handleChange}
               />
             )}
+            
           </div>
+
+          {isSignUp && (
+            <Select
+            isMulti 
+            name="languages"
+            options={programmingLanguageOptions}
+            closeMenuOnSelect={false}
+            className="basic-multi-select"
+            classNamePrefix="select"
+            onChange={handleChangeSelect}
+          />
+          )}
 
           <span
             style={{
