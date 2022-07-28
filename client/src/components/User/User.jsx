@@ -12,10 +12,16 @@ const User = ({ person }) => {
 		person.followers.includes(user._id)
 	);
 	const handleFollow = () => {
+		console.log(person._id);
 		following
 			? dispatch(unfollowUser(person._id, user))
 			: dispatch(followUser(person._id, user));
 		setFollowing(prev => !prev);
+
+	
+
+
+
 	};
 	return (
 		<div className='fromUser'>
@@ -40,6 +46,7 @@ const User = ({ person }) => {
 			>
 				{following ? "Cancel" : "Add  friend"}
 			</button>
+			
 		</div>
 	);
 };

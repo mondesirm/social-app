@@ -40,6 +40,7 @@ const Conversation = ({ data, currentUser, online }) => {
 						<span style={{ color: online ? '#51e200' : '' }}>
 							{online ? 'Online' : 'Offline'}
 						</span>
+              			<div className="button fc-button" style={{ marginLeft: '100px' }} >Unfriend</div>
 					</div>
 				</div>
 			</div>

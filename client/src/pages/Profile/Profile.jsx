@@ -1,4 +1,5 @@
 import React from 'react';
+import FriendRequest from '../../components/FriendRequest';
 import FromUsersCard from '../../components/FromUsersCard/FromUsersCard';
 import NavIcons from '../../components/NavIcons/NavIcons';
 import ProfileCard from '../../components/ProfileCard/ProfileCard';
@@ -13,6 +14,7 @@ const Profile = () => {
 				<NavIcons />
 				<div className='Profile-center'>
 					<ProfileCard location='profilePage' />
+					<FriendRequest></FriendRequest>
 				</div>
 			</div>
 			<FromUsersCard />
