@@ -111,6 +111,8 @@ export const deleteUser = async (req, res) => {
 // Follow a User
 // changed
 export const followUser = async (req, res) => {
+
+ 
   const id = req.params.id;
   const { _id } = req.body;
   console.log(id, _id)
@@ -167,7 +169,7 @@ export const unfollowUser = async (req, res) => {
 };
 
 // Ask a user to be friend
-// changed
+
 export const sendFriendRequest = async (req, res) => {
   const id = req.params.id;
   const { _id } = req.body;
@@ -193,8 +195,22 @@ export const sendFriendRequest = async (req, res) => {
   }
 };
 
-// Unfriend a User
-// changed
+
+export const getFriendRequest = async (req, res) => {
+  const { id } = req.params.id;
+
+  try {
+    const user = await UserModel.findById(id);
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
+
+
+// stop to demand a user to be friend
+
 export const cancelFriendRequest = async (req, res) => {
   const id = req.params.id;
   const { _id } = req.body;
@@ -224,8 +240,8 @@ export const cancelFriendRequest = async (req, res) => {
   }
 };
 
-// Ask a user to be friend
-// changed
+// Unfriend a User
+
 export const deniedFriendRequest = async (req, res) => {
   const id = req.params.id;
   const { _id } = req.body;
@@ -254,3 +270,4 @@ export const deniedFriendRequest = async (req, res) => {
     }
   }
 };
+// delete a friend
