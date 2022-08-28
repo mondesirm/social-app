@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './ProfileCard.css';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import { programmingLanguageOptions } from '../../docs/data';
+import { useParams } from 'react-router-dom';
+import * as UserApi from '../../api/UserRequests.js';
 
 const ProfileCard = ({ location }) => {
 	const { user } = useSelector(state => state.authReducer.authData);
+	// Get path from location
+	const params = useParams();
+	const profileUserId = params.id ?? user._id;
+	const [profileUser, setProfileUser] = useState(user);
+
+	useEffect(() => {
+		const fetchProfileUser = async () => {
+			if (profileUserId === user._id) {
+				setProfileUser(user);
+			} else {
+				const { data } = await UserApi.getUser(profileUserId);
+				setProfileUser(data);
+			}
+		};
+		fetchProfileUser();
+	}, [profileUserId, user]);
 
 	return (
 		<div className='ProfileCard'>
@@ -22,19 +40,22 @@ const ProfileCard = ({ location }) => {
 			</div>
 			<div className='ProfileName'>
 				<span>
-					{user.firstname} {user.lastname}
+					{profileUser.firstname} {profileUser.lastname}
 				</span>
+				
 				<span>
-				<Select
-					isMulti 
-					name="languages"
-					value={(user.languages || []).map(language => ({ label: language }))}
-					options={programmingLanguageOptions}
-					closeMenuOnSelect={false}
-					className="basic-multi-select"
-					classNamePrefix="select"
-					isDisabled={true}
-				/>
+					{profileUser.languages.length > 0 && (
+						<Select
+							isMulti 
+							name="languages"
+							value={(profileUser.languages || []).map(language => ({ label: language }))}
+							options={programmingLanguageOptions}
+							closeMenuOnSelect={false}
+							className="basic-multi-select"
+							classNamePrefix="select"
+							isDisabled={true}
+						/>
+					)}
 				</span>
 			</div>
 
@@ -42,13 +63,13 @@ const ProfileCard = ({ location }) => {
 				<hr />
 				<div>
 					<div className='follow'>
-						<span>{user.followers.length}</span>
-						<span>Amis</span>
+						<span>{profileUser.followers.length}</span>
+						<span>Followers</span>
 					</div>
 					<div className='vl'></div>
 					<div className='follow'>
-						<span>{user.following.length}</span>
-						<span>Demande envoyées</span>
+						<span>{profileUser.following.length}</span>
+						<span>Following</span>
 					</div>
 				</div>
 				<hr />
@@ -59,7 +80,7 @@ const ProfileCard = ({ location }) => {
 			) : (
 				<span>
 					<Link
-						to={`/profile/${user._id}`}
+						to={`/profile/${profileUser._id}`}
 						style={{ textDecoration: 'none', color: 'inherit' }}
 					>
 						My Profile

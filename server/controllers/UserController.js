@@ -77,7 +77,7 @@ export const updateUser = async (req, res) => {
         process.env.JWTKEY,
         { expiresIn: "1h" }
       );
-      console.log({user, token})
+      // console.log({user, token})
       res.status(200).json({user, token});
     } catch (error) {
       console.log("Error")
@@ -120,13 +120,19 @@ export const followUser = async (req, res) => {
     res.status(403).json("Action Forbidden");
   } else {
     try {
-      const followUser = await UserModel.findById(id);
-      const followingUser = await UserModel.findById(_id);
+      const user = await UserModel.findById(_id);
+      const toUser = await UserModel.findById(id);
 
-      if (!followUser.followers.includes(_id)) {
-        await followUser.updateOne({ $push: { followers: _id } });
-        await followingUser.updateOne({ $push: { following: id } });
-        res.status(200).json("User followed!");
+      if (!user.following.includes(id)) {
+        await user.updateOne({ $push: { following: id } });
+        await toUser.updateOne({ $push: { followers: _id } });
+        
+        const token = jwt.sign(
+          { username: user.username, id: user._id },
+          process.env.JWTKEY,
+          { expiresIn: "1h" }
+        );
+        res.status(200).json({user, token});
       } else {
         res.status(403).json("you are already following this id");
       }
@@ -149,15 +155,20 @@ export const unfollowUser = async (req, res) => {
   }
   else{
     try {
-      const unFollowUser = await UserModel.findById(id)
-      const unFollowingUser = await UserModel.findById(_id)
+      const user = await UserModel.findById(_id)
+      const toUser = await UserModel.findById(id)
 
-
-      if (unFollowUser.followers.includes(_id))
+      if (user.following.includes(id))
       {
-        await unFollowUser.updateOne({$pull : {followers: _id}})
-        await unFollowingUser.updateOne({$pull : {following: id}})
-        res.status(200).json("Unfollowed Successfully!")
+        await user.updateOne({$pull : {following: id}})
+        await toUser.updateOne({ $pull: { followers: _id } })
+        
+        const token = jwt.sign(
+          { username: user.username, id: user._id },
+          process.env.JWTKEY,
+          { expiresIn: "1h" }
+        );
+        res.status(200).json({user, token})
       }
       else{
         res.status(403).json("You are not following this User")
@@ -178,13 +189,13 @@ export const sendFriendRequest = async (req, res) => {
     res.status(403).json("Action Forbidden");
   } else {
     try {
-      const toUser = await UserModel.findById(id);
-      const fromUser = await UserModel.findById(_id);
+      const fromUser = await UserModel.findById(id);
+      const toUser = await UserModel.findById(_id);
 
-      if (!toUser.followers.includes(_id)) {
+      if (!user.followers.includes(_id)) {
+        await user.updateOne({ $push: { following: id } });
         await toUser.updateOne({ $push: { followers: _id } });
-        await fromUser.updateOne({ $push: { following: id } });
-        res.status(200).json("User ask a demand to be friend!");
+        res.status(200).json({user});
       } else {
         res.status(403).json("You are already friend with this user");
       }
@@ -221,15 +232,14 @@ export const cancelFriendRequest = async (req, res) => {
   }
   else{
     try {
-      const cancelFriendRequest = await UserModel.findById(id)
-      const unFollowingUser = await UserModel.findById(_id)
+      const user = await UserModel.findById(id)
+      const toUser = await UserModel.findById(_id)
 
-
-      if (cancelFriendRequest.followers.includes(_id))
+      if (user.followers.includes(_id))
       {
-        await cancelFriendRequest.updateOne({$pull : {followers: _id}})
-        await unFollowingUser.updateOne({$pull : {following: id}})
-        res.status(200).json("Unfollowed Successfully!")
+        await user.updateOne({$pull : {following: id}})
+        await toUser.updateOne({$pull : {followers: _id}})
+        res.status(200).json({user})
       }
       else{
         res.status(403).json("You are not following this User")
@@ -252,15 +262,15 @@ export const deniedFriendRequest = async (req, res) => {
   }
   else{
     try {
-      const deniedFriendRequest = await UserModel.findById(id)
-      const unFollowingUser = await UserModel.findById(_id)
+      const user = await UserModel.findById(id)
+      const toUser = await UserModel.findById(_id)
 
 
-      if (deniedFriendRequest.followers.includes(_id))
+      if (user.followers.includes(_id))
       {
-        await deniedFriendRequest.updateOne({$pull : {followers: _id}})
-        await unFollowingUser.updateOne({$pull : {following: id}})
-        res.status(200).json("Unfollowed Successfully!")
+        await user.updateOne({$pull : {followers: _id}})
+        await toUser.updateOne({$pull : {following: id}})
+        res.status(200).json({user})
       }
       else{
         res.status(403).json("You are not following this User")

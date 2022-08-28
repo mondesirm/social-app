@@ -1,5 +1,5 @@
 import express from 'express'
-import { deleteUser, sendFriendRequest, getAllUsers, getUser, updateUser, getUserFriends, getFriendRequest } from '../controllers/UserController.js'
+import { deleteUser, sendFriendRequest, cancelFriendRequest, followUser, unfollowUser, getAllUsers, getUser, updateUser, getUserFriends } from '../controllers/UserController.js'
 import authMiddleWare from '../middleware/AuthMiddleware.js';
 
 const router = express.Router()
@@ -7,10 +7,9 @@ const router = express.Router()
 router.get('/:id', getUser);
 router.get('/:id/friends', getUserFriends);
 router.get('/',getAllUsers)
-router.put('/:id/friendRequest',authMiddleWare, getFriendRequest)
 router.put('/:id',authMiddleWare, updateUser)
 router.delete('/:id',authMiddleWare, deleteUser)
-router.put('/:id/follow',authMiddleWare, sendFriendRequest)
-router.put('/:id/unfollow',authMiddleWare, sendFriendRequest)
+router.put('/:id/follow',authMiddleWare, followUser)
+router.put('/:id/unfollow',authMiddleWare, unfollowUser)
 
 export default router

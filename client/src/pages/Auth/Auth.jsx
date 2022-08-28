@@ -61,8 +61,6 @@ const Auth = () => {
       {/* left side */}
 
       <div className="a-left">
-        <img src={Logo} alt="" />
-
         <div className="Webname">
           <h1>Social App</h1>
           <h6>Share your hobbies, interests, and more with friends.</h6>

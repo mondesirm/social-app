@@ -6,7 +6,7 @@ import ProfileCard from '../../components/ProfileCard/ProfileCard';
 import ProfileLeft from '../../components/ProfileLeft/ProfileLeft';
 import RightSide from '../../components/RightSide/RightSide';
 import './Profile.css';
-const Profile = () => {
+const Profile = (props) => {
 	return (
 		<div className='Profile'>
 			<ProfileLeft />
@@ -14,7 +14,7 @@ const Profile = () => {
 				<NavIcons />
 				<div className='Profile-center'>
 					<ProfileCard location='profilePage' />
-					<FriendRequest></FriendRequest>
+					{/* <FriendRequest></FriendRequest> */}
 				</div>
 			</div>
 			<FromUsersCard />

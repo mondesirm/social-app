@@ -1,13 +1,26 @@
+import React, { useEffect, useState } from 'react';
 import "./App.css";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth/Auth";
 import Profile from "./pages/Profile/Profile";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Chat from "./pages/Chat/Chat";
+import { getCurrentUser, updateUser } from './actions/UserAction';
 
 function App() {
 	const user = useSelector((state) => state.authReducer.authData);
+	const dispatch = useDispatch();
+
+	useEffect(() => {
+		// TODO followers don't update unless we sign out and sign back in
+		const unsubscribe = () => {
+			if (user?._id) dispatch(getCurrentUser(user._id));
+		};
+
+		unsubscribe();
+	}, [user]);
+
 	return (
 		<div
 			className="App"

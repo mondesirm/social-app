@@ -9,6 +9,7 @@ import { userChats } from '../../api/ChatRequests';
 import { useDispatch, useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
 import ProfileSide from '../../components/ProfileSide/ProfileSide';
+import * as UserApi from '../../api/UserRequests.js';
 
 const Chat = () => {
 	const dispatch = useDispatch();

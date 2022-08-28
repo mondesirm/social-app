@@ -10,10 +10,11 @@ import Tech from './models/techModel.js';
 // Get arguments passed on command line
 var userArgs = process.argv.slice(2);
 
-if (!userArgs[0].startsWith('mongodb')) {
+if (!userArgs[0]?.startsWith('mongodb')) {
 	console.error('You need to specify a valid mongodb URL as the first argument');
 	console.log('Usage: node initDB.js mongodb+srv://<user>:<password>@<host>/<database>?retryWrites=true');
-	userArgs[0] = process.env.MONGODB_CONNECTION;
+	// userArgs[0] = process.env.MONGODB_CONNECTION;
+	process.exit(1);
 }
 
 var mongoDB = userArgs[0];
@@ -89,7 +90,7 @@ function createUsers(cb) {
 			userCreate('john.doe', '$2b$10$mqv/8wKw5Kou4WdiNWCD8.BcRZgtfbGA92IFzRdw4dn5gpJPqos4K', 'John', 'DOE', true, [], users.map(user => user._id), techs, callback);
 		},
 		function (callback) {
-			userCreate('anonymous', '$2b$10$mqv/8wKw5Kou4WdiNWCD8.BcRZgtfbGA92IFzRdw4dn5gpJPqos4K', 'Ann Onnie', 'Moss', false, [], [], [techs[0]._id], callback);
+			userCreate('root', '$2b$10$mqv/8wKw5Kou4WdiNWCD8.BcRZgtfbGA92IFzRdw4dn5gpJPqos4K', 'Test', 'User', false, [], [], [techs[0]._id], callback);
 		},
 		function (callback) {
 			userCreate('jane.doe', '$2b$10$mqv/8wKw5Kou4WdiNWCD8.BcRZgtfbGA92IFzRdw4dn5gpJPqos4K', 'Jane', 'DOE', false, [users[1]._id], [], [techs[1]._id], callback);

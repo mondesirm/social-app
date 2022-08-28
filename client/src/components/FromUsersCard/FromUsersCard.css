@@ -21,9 +21,11 @@
 	background-color: #CCC;
 }
 
-.fromUser > div {
+.fromUser > div, .fromUser > a {
 	display: flex;
 	gap: 10px;
+	text-decoration: none;
+	color: #000;
 }
 
 .fromUserImage {

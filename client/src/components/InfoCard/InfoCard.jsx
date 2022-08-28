@@ -1,5 +1,3 @@
-/** @format */
-
 import React, { useEffect, useState } from 'react';
 import './InfoCard.css';
 import { UilPen } from '@iconscout/react-unicons';
@@ -16,8 +14,8 @@ const InfoCard = () => {
 	const params = useParams();
 	const [modalOpened, setModalOpened] = useState(false);
 	const profileUserId = params.id;
-	const [profileUser, setProfileUser] = useState({});
 	const { user } = useSelector(state => state.authReducer.authData);
+	const [profileUser, setProfileUser] = useState(user);
 
 	const handleLogOut = () => {
 		dispatch(logout());
@@ -28,14 +26,12 @@ const InfoCard = () => {
 			if (profileUserId === user._id) {
 				setProfileUser(user);
 			} else {
-				console.log('fetching');
-				const profileUser = await UserApi.getUser(profileUserId);
-				setProfileUser(profileUser);
-				console.log(profileUser);
+				const { data } = await UserApi.getUser(profileUserId);
+				setProfileUser(data);
 			}
 		};
 		fetchProfileUser();
-	}, [user]);
+	}, [profileUserId, user]);
 
 	return (
 		<div className='InfoCard'>
@@ -51,7 +47,7 @@ const InfoCard = () => {
 						<ProfileModal
 							modalOpened={modalOpened}
 							setModalOpened={setModalOpened}
-							data={user}
+							data={profileUser}
 						/>
 					</div>
 				) : (
@@ -83,16 +79,21 @@ const InfoCard = () => {
 				<span>
 					<b>Languages </b>
 				</span>
-				<span><Select
-					isMulti 
-					name="languages"
-					value={(profileUser.languages || []).map(language => ({ label: language }))}
-					options={programmingLanguageOptions}
-					closeMenuOnSelect={false}
-					className="basic-multi-select"
-					classNamePrefix="select"
-					isDisabled={true}
-				/></span>
+				<span>
+					{profileUser.languages.length > 0
+						? (<Select
+							isMulti 
+							name="languages"
+							value={(profileUser.languages || []).map(language => ({ label: language }))}
+							options={programmingLanguageOptions}
+							closeMenuOnSelect={false}
+							className="basic-multi-select"
+							classNamePrefix="select"
+							isDisabled={true}
+						/>)
+						: 'None'
+					}
+				</span>
 			</div>
 
 			<button className='button logout-button' onClick={handleLogOut}>

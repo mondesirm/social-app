@@ -1,26 +1,46 @@
-import * as UserApi from "../api/UserRequests";
+import * as UserApi from '../api/UserRequests';
+import * as ChatApi from '../api/ChatRequests';
 
+export const getCurrentUser = (id) => async dispatch => {
+	dispatch({ type: 'UPDATING_START' });
 
-export const updateUser=(id, formData)=> async(dispatch)=> {
-    dispatch({type: "UPDATING_START"})
-    try{
-        const {data} = await UserApi.updateUser(id, formData);
-        console.log("Action ko receive hoa hy ye : ",data)
-        dispatch({type: "UPDATING_SUCCESS", data: data})
-    }   
-    catch(error){
-        dispatch({type: "UPDATING_FAIL"})
-    }
-}
+	try {
+		const { data } = await UserApi.getUser(id);
+		dispatch({ type: 'UPDATING_SUCCESS', data: data });
+	} catch (error) {
+		dispatch({ type: 'UPDATING_FAIL' });
+	}
+};
 
+export const updateUser = (id, formData) => async dispatch => {
+	dispatch({ type: 'UPDATING_START' });
+	try {
+		const { data } = await UserApi.updateUser(id, formData);
+		dispatch({ type: 'UPDATING_SUCCESS', data: data });
+	} catch (error) {
+		dispatch({ type: 'UPDATING_FAIL' });
+	}
+};
 
-export const followUser = (id, data)=> async(dispatch)=> {
+export const followUser = (id, formData) => async dispatch => {
+	dispatch({ type: 'UPDATING_START' });
+	try {
+		const { data } = await UserApi.followUser(id, formData);
+		await ChatApi.createChat({ senderId: id, receiverId: formData._id });
   
-    dispatch({type: "FOLLOW_USER", data: id})
-    UserApi.followUser(id, data)
-}
+		dispatch({type: "FOLLOW_USER", data: id})
+	} catch (error) {
+		dispatch({ type: 'UPDATING_FAIL' });
+	}
+};
 
-export const unfollowUser = (id, data)=> async(dispatch)=> {
-    dispatch({type: "UNFOLLOW_USER", data: id})
-    UserApi.unfollowUser(id, data)
-}
+export const unfollowUser = (id, formData) => async dispatch => {
+	dispatch({ type: 'UPDATING_START' });
+	try {
+		const { data } = await UserApi.unfollowUser(id, formData);
+		await ChatApi.removeChat({ senderId: id, receiverId: formData._id });
+		dispatch({type: "UNFOLLOW_USER", data: id})
+	} catch (error) {
+		dispatch({ type: 'UPDATING_FAIL' });
+	}
+};

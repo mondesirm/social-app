@@ -1,0 +1,15 @@
+// MongoDB Playground
+// Use Ctrl+Space inside a snippet or a string literal to trigger completions.
+
+// The current database to use.
+use('SocialMedia');
+
+//? Reset (when the website is bugged)
+// db.chats.deleteMany({});
+// db.messages.deleteMany({});
+// db.users.updateMany({}, { $set: { following: [], followers: [] } });
+
+//? Debug
+// db.users.deleteMany({ username: "root" });
+// db.users.find({ firstname: { $regex: /(Malik|Test)/ } }, { username: 1, followers: 1, following: 1 });
+// db.chats.find({ members: { $all: [ "62aa858dec508d7f97cfba26", "62aa85daec508d7f97cfba30" ] } });

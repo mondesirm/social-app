@@ -12,18 +12,10 @@ const FromUsersCard = ({ location }) => {
 	const { user } = useSelector(state => state.authReducer.authData);
 
 	useEffect(() => {
-		const fetchFriends = async () => {
-			const { data } = await getUserFriends(user._id);
-			console.log(data);
-			setPersons(persons.concat(data));
-		};
-
 		const fetchPersons = async () => {
 			const { data } = await getAllUser();
-			console.log(data);
 			setPersons(persons.concat(data));
 		};
-		// fetchFriends();
 		fetchPersons();
 	}, []);
 
