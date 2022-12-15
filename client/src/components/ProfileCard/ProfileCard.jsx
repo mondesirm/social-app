@@ -2,13 +2,11 @@ import React, { useEffect, useState } from 'react';
 import './ProfileCard.css';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import Select from 'react-select';
-import { programmingLanguageOptions } from '../../docs/data';
 import { useParams } from 'react-router-dom';
 import * as UserApi from '../../api/UserRequests.js';
 
 const ProfileCard = ({ location }) => {
-	const { user } = useSelector(state => state.authReducer.authData);
+	const { user } = useSelector(state => state.authReducer.currentUser);
 	// Get path from location
 	const params = useParams();
 	const profileUserId = params.id ?? user._id;
@@ -19,7 +17,7 @@ const ProfileCard = ({ location }) => {
 			if (profileUserId === user._id) {
 				setProfileUser(user);
 			} else {
-				const { data } = await UserApi.getUser(profileUserId);
+				const { data } = await UserApi.one(profileUserId);
 				setProfileUser(data);
 			}
 		};
@@ -40,22 +38,13 @@ const ProfileCard = ({ location }) => {
 			</div>
 			<div className='ProfileName'>
 				<span>
-					{profileUser.firstname} {profileUser.lastname}
+					{profileUser.firstName} {profileUser.lastName}
 				</span>
 				
 				<span>
-					{profileUser.languages.length > 0 && (
-						<Select
-							isMulti 
-							name="languages"
-							value={(profileUser.languages || []).map(language => ({ label: language }))}
-							options={programmingLanguageOptions}
-							closeMenuOnSelect={false}
-							className="basic-multi-select"
-							classNamePrefix="select"
-							isDisabled={true}
-						/>
-					)}
+					{profileUser.rooms.map(room => (
+						<span>{room.name} by {room.owner.fullName}</span>
+					))}
 				</span>
 			</div>
 

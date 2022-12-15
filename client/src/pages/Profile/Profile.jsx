@@ -1,10 +1,10 @@
 import React from 'react';
-import FriendRequest from '../../components/FriendRequest';
+// import FriendRequest from '../../components/FriendRequest';
 import FromUsersCard from '../../components/FromUsersCard/FromUsersCard';
 import NavIcons from '../../components/NavIcons/NavIcons';
 import ProfileCard from '../../components/ProfileCard/ProfileCard';
 import ProfileLeft from '../../components/ProfileLeft/ProfileLeft';
-import RightSide from '../../components/RightSide/RightSide';
+// import RightSide from '../../components/RightSide/RightSide';
 import './Profile.css';
 const Profile = (props) => {
 	return (

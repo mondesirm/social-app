@@ -1,7 +1,15 @@
 {
   "name": "social-app-socket",
+  "author": "MONDESIR Malik",
+  "version": "0.1.0",
+  "description": "Social App Socket",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "license": "ISC",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "build": "node index.js"
   },
   "dependencies": {
     "nodemon": "^2.0.16",

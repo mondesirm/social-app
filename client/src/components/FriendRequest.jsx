@@ -8,8 +8,8 @@ import { getFriendRequest } from '../api/UserRequests';
 import User from './User/User';
 
 const FriendRequest = ({ person }) => {
-	const publicFolder = process.env.REACT_APP_PUBLIC_FOLDER;
-	const { user } = useSelector(state => state.authReducer.authData);
+	const publicFolder = process.env.PUBLIC_FOLDER;
+	const { user } = useSelector(state => state.authReducer.currentUser);
 
 	const [friendRequest, setFriendRequest] = useState([]);
 	const [persons, setPersons] = useState([]);

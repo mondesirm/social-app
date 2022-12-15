@@ -5,16 +5,16 @@ import LogoSearch from '../../components/LogoSearch/LogoSearch';
 import NavIcons from '../../components/NavIcons/NavIcons';
 import './Chat.css';
 import { useEffect } from 'react';
-import { userChats } from '../../api/ChatRequests';
-import { useDispatch, useSelector } from 'react-redux';
+import * as ChatApi from '../../api/ChatRequests';
+import { /* useDispatch, */ useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
-import ProfileSide from '../../components/ProfileSide/ProfileSide';
-import * as UserApi from '../../api/UserRequests.js';
+// import ProfileSide from '../../components/ProfileSide/ProfileSide';
+// import * as UserApi from '../../api/UserRequests.js';
 
 const Chat = () => {
-	const dispatch = useDispatch();
+	// const dispatch = useDispatch();
 	const socket = useRef();
-	const { user } = useSelector(state => state.authReducer.authData);
+	const { user } = useSelector(state => state.authReducer.currentUser);
 
 	const [chats, setChats] = useState([]);
 	const [onlineUsers, setOnlineUsers] = useState([]);
@@ -25,7 +25,7 @@ const Chat = () => {
 	useEffect(() => {
 		const getChats = async () => {
 			try {
-				const { data } = await userChats(user._id);
+				const { data } = await ChatApi.of(user._id);
 				setChats(data);
 			} catch (error) {
 				console.log(error);
@@ -36,7 +36,7 @@ const Chat = () => {
 
 	// Connect to Socket.io
 	useEffect(() => {
-		socket.current = io('ws://localhost:8800');
+		socket.current = io(process.env.SOCKET_HOST);
 		socket.current.emit('new-user-add', user._id);
 		socket.current.on('get-users', users => {
 			setOnlineUsers(users);
@@ -52,7 +52,7 @@ const Chat = () => {
 
 	// Get the message from socket server
 	useEffect(() => {
-		socket.current.on('recieve-message', data => {
+		socket.current.on('receive-message', data => {
 			console.log(data);
 			setReceivedMessage(data);
 		});

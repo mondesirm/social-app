@@ -1,46 +1,33 @@
-exports.connection = require("./db");
-exports.User = require("./User");
-exports.Post = require("./Post");
+import Sequelize from "sequelize"
 
-exports.User.hasMany(exports.Post);
-exports.Post.belongsTo(exports.User);
+const connection = new Sequelize(process.env.DB_CONN, { useNewUrlParser: true })
+  .authenticate()
+  .then(() => { console.log('Connection has been established successfully.') })
+  .catch((err) => { console.error('Unable to connect to the database:', err) })
 
-function denormalizePost(post) {
-  exports.Post.findByPk(post.id, {
-    include: [
-      {
-        model: exports.User,
-        as: "author",
-        attributes: ["id", "firstName"],
-      },
-    ],
-  }).then((result) => {
-    PostMongo.findOneAndUpdate(
-      { _id: post.id },
-      { $set: result.dataValues },
-      { upsert: true }
-    );
-  });
-}
+export default connection
+export const User = require('./User').default
+export const Post = require('./Post').default
 
-exports.User.addHook("afterUpdate", (user) => {
-  exports.Post.findAll({
-    include: [
-      {
-        model: exports.User,
-        as: "author",
-        where: { id: user.id },
-      },
-    ],
-  }).then((posts) => {
-    posts.forEach((post) => {
-      denormalizePost(post);
-    });
-  });
-});
+User.hasMany(Post)
+Post.belongsTo(User)
 
-exports.Post.addHook("afterCreate", denormalizePost);
-exports.Post.addHook("afterUpdate", denormalizePost);
-exports.Post.addHook("afterDestroy", (post) => {
-  PostMongo.deleteOne({ _id: post.id });
-});
+const denormalizePost = post => Post.findByPk(post.id, { include: [{
+	model: User,
+	as: 'author',
+	attributes: ['id', 'firstName']
+}]}).then(res => PostMongo.findOneAndUpdate(
+	{ _id: post.id },
+	{ $set: res.dataValues },
+	{ upsert: true }
+))
+	
+User.addHook('afterUpdate', user => Post.findAll({ include: [{
+	model: User,
+	as: 'author',
+	where: { id: user.id },
+}]}).then(posts => posts.forEach(post => denormalizePost(post))))
+
+Post.addHook('afterCreate', denormalizePost)
+Post.addHook('afterUpdate', denormalizePost)
+Post.addHook('afterDestroy', post => PostMongo.deleteOne({ _id: post.id }))

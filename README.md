@@ -2,13 +2,12 @@
 
 ## Contributors
 - BAERT Romain
-- BENADJEMIA Jehane
 - MONDESIR Malik
 - PERRADIN Nicolas
 
 # Installation
 1. The project contains 3 main folders which are: `client/`, `server/` and `socket/`.
-2. In the `client/` and `server/` folders, you will need to rename the `.env.sample` file to `.env` and fill it with your credentials if necessary.
+2. In the root folder, you will need to rename the `.env.example` file to `.env` and fill it with your credentials if necessary.
 3. In each of them, run the following command: `npm install && npm start`.
 
 > Experimental: create fixtures with `node server/initDB.js` (usage will be displayed)
@@ -17,5 +16,5 @@
 - Authentication is required to access the website content.
 - Logging in on multiple devices with the same account is restricted.
 - No email address verification is done, use any username you like.
-- Programming languages preferences are done during the registration.
+- Tags preferences are done during the registration.
 - A chat between 2 users is unlocked when they become friends by following each other.

@@ -1,0 +1,27 @@
+{
+  "name": "social-app",
+  "author": "MONDESIR Malik",
+  "version": "1.0.0",
+  "description": "Social App",
+  "private": true,
+  "type": "module",
+  "license": "ISC",
+  "scripts": {
+    "init": "docker compose exec server npm run init",
+    "start": "docker compose up -d",
+    "stop": "docker compose stop",
+    "build": "docker compose build --no-cache"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mondesirm/social-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mondesirm/social-app/issues"
+  },
+  "homepage": "https://github.com/mondesirm/social-app#readme",
+  "devDependencies": {
+    "eslint": "^8.29.0",
+    "eslint-plugin-react": "^7.31.11"
+  }
+}

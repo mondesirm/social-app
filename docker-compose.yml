@@ -1,0 +1,97 @@
+version: '3.6'
+
+services:
+  mongo:
+    image: mongo
+    # restart: always
+    container_name: social-app-mongo
+    ports:
+      - 27017:27017
+    networks:
+      - database
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASS}
+    volumes:
+      # - ./SampleCollections:/usr/local/sampleCollections
+      - mongo-data:/data/db
+    # working_dir: /usr/local/sampleCollections
+
+  # admin:
+  #   image: mongo-express
+  #   container_name: social-app-admin
+  #   depends_on: mongo
+  #   ports:
+  #     - 8081:8081
+  #   networks:
+  #     - database
+  #   environment:
+  #     ME_CONFIG_BASICAUTH_USERNAME: ${DB_USER}
+  #     ME_CONFIG_BASICAUTH_PASSWORD: ${DB_PASS}
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: ${DB_USER}
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: ${DB_PASS}
+  #     ME_CONFIG_MONGODB_SERVER: mongo
+  #     ME_CONFIG_MONGODB_URL: mongodb://mongo:27017
+
+  # postgres:
+  #   image: postgres:alpine
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER}
+  #     POSTGRES_PASSWORD: ${DB_PASS}
+  #     POSTGRES_DB: ${DB_NAME}
+
+  client:
+    build:
+      context: ./client
+    container_name: social-app-client
+    volumes:
+      - ./client:/usr/local/client
+      - /usr/local/client/node_modules
+    working_dir: /usr/local/client
+    env_file:
+      - ./.env
+    ports:
+      - ${CLIENT_PORT}:${CLIENT_PORT}
+    networks:
+      - proxy
+
+  server:
+    build:
+      context: ./server
+    container_name: social-app-server
+    volumes:
+      - ./server:/usr/local/server
+      - /usr/local/server/node_modules
+    working_dir: /usr/local/server
+    env_file:
+      - ./.env
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    networks:
+      - database
+      - proxy
+
+  socket:
+    build:
+      context: ./socket
+    container_name: social-app-socket
+    volumes:
+      - ./socket:/usr/local/socket
+      - /usr/local/socket/node_modules
+    working_dir: /usr/local/socket
+    env_file:
+      - ./.env
+    ports:
+      - ${SOCKET_PORT}:${SOCKET_PORT}
+
+networks:
+    database:
+        driver: bridge
+    proxy:
+        driver: bridge
+
+volumes:
+  mongo-data: {}
+  # postgres-data: {}

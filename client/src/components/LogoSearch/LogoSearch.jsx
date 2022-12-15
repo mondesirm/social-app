@@ -1,18 +1,20 @@
-import React from 'react';
-import Logo from '../../img/logo.png';
-import './LogoSearch.css';
-import { UilSearch } from '@iconscout/react-unicons';
+import React from 'react'
+import { SearchIcon } from '@chakra-ui/icons'
+
+import './LogoSearch.css'
+// import Logo from '../../img/logo.png'
+
 const LogoSearch = () => {
 	return (
 		<div className='LogoSearch'>
 			<div className='Search'>
-				<input type='text' placeholder='Search techs...' />
+				<input type='text' placeholder='Search tags...' />
 				<div className='s-icon'>
-					<UilSearch />
+					<SearchIcon />
 				</div>
 			</div>
 		</div>
-	);
-};
+	)
+}
 
-export default LogoSearch;
+export default LogoSearch

@@ -1,13 +1,12 @@
-/** @format */
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 
-import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { followUser, unfollowUser } from '../../actions/UserAction';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'
 
 const User = ({ person }) => {
-	const publicFolder = process.env.REACT_APP_PUBLIC_FOLDER;
-	const { user } = useSelector(state => state.authReducer.authData);
+	// const publicFolder = process.env.PUBLIC_FOLDER;
+	const { user, follow, unfollow } = useAuth()
 	const dispatch = useDispatch();
 
 	const [following, setFollowing] = useState(
@@ -16,8 +15,8 @@ const User = ({ person }) => {
 	const handleFollow = () => {
 		// console.log(person._id);
 		following
-			? dispatch(unfollowUser(person._id, user))
-			: dispatch(followUser(person._id, user));
+			? dispatch(unfollow(person._id, user))
+			: dispatch(follow(person._id, user));
 		setFollowing(prev => !prev);
 	};
 
@@ -30,7 +29,7 @@ const User = ({ person }) => {
 					className='fromUserImage'
 				/>
 				<div className='name'>
-					<span>{person.firstname} {person.lastname}</span>
+					<span>{person.firstName} {person.lastName}</span>
 					<span>{person.username}</span>
 					{person.following.includes(user._id) &&
 						<span>{person.followers.includes(user._id) ? "(Friends)" : "(Following you)"}</span>

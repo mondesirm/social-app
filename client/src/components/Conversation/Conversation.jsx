@@ -1,9 +1,8 @@
-/** @format */
-
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { getUser } from '../../api/UserRequests';
+
+import * as User from '../../api/UserRequests';
+
 const Conversation = ({ data, currentUser, online }) => {
 	const [userData, setUserData] = useState(null);
 	const dispatch = useDispatch();
@@ -12,7 +11,7 @@ const Conversation = ({ data, currentUser, online }) => {
 		const userId = data.members.find(id => id !== currentUser);
 		const getUserData = async () => {
 			try {
-				const { data } = await getUser(userId);
+				const { data } = await User.one(userId);
 				setUserData(data);
 				dispatch({ type: 'SAVE_USER', data: data });
 			} catch (error) {
@@ -21,7 +20,8 @@ const Conversation = ({ data, currentUser, online }) => {
 		};
 
 		getUserData();
-	}, []);
+	});
+
 	return (
 		<>
 			<div className='fromUser conversation'>
@@ -35,7 +35,7 @@ const Conversation = ({ data, currentUser, online }) => {
 					/>
 					<div className='name' style={{ fontSize: '0.8rem' }}>
 						<span>
-							{userData?.firstname} {userData?.lastname}
+							{userData?.firstName} {userData?.lastName}
 						</span>
 						<span style={{ color: online ? '#51e200' : '' }}>
 							{online ? 'Online' : 'Offline'}

@@ -1,16 +1,12 @@
-import React from "react";
-import { Modal, useMantineTheme } from "@mantine/core";
-import FromUsersCard from "../FromUsersCard/FromUsersCard";
+import React from 'react'
+import { Modal, useColorModeValue } from '@chakra-ui/react'
+
+import FromUsersCard from '../FromUsersCard/FromUsersCard'
 
 const FromUsersModal = ({ modalOpened, setModalOpened }) => {
-  const theme = useMantineTheme();
   return (
     <Modal
-      overlayColor={
-        theme.colorScheme === "dark"
-          ? theme.colors.dark[9]
-          : theme.colors.gray[2]
-      }
+      overlayColor={useColorModeValue('gray.50', 'gray.900')}
       overlayOpacity={0.55}
       overlayBlur={3}
       size="55%"
@@ -20,7 +16,7 @@ const FromUsersModal = ({ modalOpened, setModalOpened }) => {
 
     <FromUsersCard location='modal'/>
     </Modal>
-  );
-};
+  )
+}
 
-export default FromUsersModal;
+export default FromUsersModal

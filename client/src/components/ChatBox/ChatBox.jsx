@@ -1,119 +1,120 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react'
 
-import { format } from 'timeago.js';
-import InputEmoji from 'react-input-emoji';
-import { useDispatch, useSelector } from "react-redux";
+//! import { format } from 'timeago.js'
+import { useDispatch } from 'react-redux'
+import InputEmoji from 'react-input-emoji'
 
-import { uploadImage } from "../../actions/UploadAction";
-import { addMessage, getMessages } from '../../api/MessageRequests';
-import { getUser } from '../../api/UserRequests';
-import './ChatBox.css';
+import './ChatBox.css'
+import * as User from '../../api/UserRequests'
+import * as Message from '../../api/MessageRequests'
+import { useAuth } from '../../contexts/AuthContext'
 
 const ChatBox = ({ chat, currentUser, setSendMessage, receivedMessage }) => {
-	const [userData, setUserData] = useState(null);
-	const [messages, setMessages] = useState([]);
-	const [newMessage, setNewMessage] = useState('');
-	const [image, setImage] = useState(null);
-	const dispatch = useDispatch();
+	const { upload } = useAuth()
+	const [userData, setUserData] = useState(null)
+	const [messages, setMessages] = useState([])
+	const [newMessage, setNewMessage] = useState('')
+	const [image, setImage] = useState(null)
+	const dispatch = useDispatch()
 
 	const handleChange = newMessage => {
-		setNewMessage(newMessage);
-	};
+		setNewMessage(newMessage)
+	}
 
-	const onImageChange = event => {
+	/* const onImageChange = event => {
 		if (event.target.files && event.target.files[0]) {
-			let img = event.target.files[0];
-			setImage(img);
+			let img = event.target.files[0]
+			setImage(img)
 		}
-	};
+	} */
 
 	useEffect(() => {
-		const userId = chat?.members?.find(id => id !== currentUser);
+		const userId = chat?.members?.find(id => id !== currentUser)
 		const getUserData = async () => {
 			try {
-				const { data } = await getUser(userId);
-				setUserData(data);
+				const { data } = await User.one(userId)
+				setUserData(data)
 			} catch (error) {
-				console.log(error);
+				console.log(error)
 			}
-		};
+		}
 
-		if (chat !== null) getUserData();
-	}, [chat, currentUser]);
+		if (chat !== null) getUserData()
+	}, [chat, currentUser])
 
 	useEffect(() => {
 		const fetchMessages = async () => {
 			try {
-				const { data } = await getMessages(chat._id);
-				setMessages(data);
+				const { data } = await Message.of(chat._id)
+				setMessages(data)
 			} catch (error) {
-				console.log(error);
+				console.log(error)
 			}
-		};
+		}
 
-		if (chat !== null) fetchMessages();
-	}, [chat]);
+		if (chat !== null) fetchMessages()
+	}, [chat])
 
 	useEffect(() => {
-		scroll.current?.scrollIntoView({ behavior: 'smooth' });
-	}, [messages]);
+		scroll.current?.scrollIntoView({ behavior: 'smooth' })
+	}, [messages])
 
 	const handleSend = async e => {
-		e.preventDefault();
+		e.preventDefault()
 
-		if (newMessage.replace(/\s/g, '') == '') return;
+		if (newMessage.replace(/\s/g, '') === '') return
 
 		const message = {
 			senderId: currentUser,
 			text: newMessage,
 			chatId: chat._id,
-		};
+		}
 
 		if (image) {
-			const data = new FormData();
-			const fileName = Date.now() + image.name;
-			data.append("name", fileName);
-			data.append("file", image);
-			newMessage.image = fileName;
-			console.log(newMessage);
+			const data = new FormData()
+			const fileName = Date.now() + image.name
+			data.append('name', fileName)
+			data.append('file', image)
+			newMessage.image = fileName
+			console.log(newMessage)
 
 			try {
-				dispatch(uploadImage(data));
+				dispatch(image(data))
 			} catch (err) {
-				console.log(err);
+				console.log(err)
 			}
 		}
 
-		const receiverId = chat.members.find(id => id !== currentUser);
+		const receiverId = chat.members.find(id => id !== currentUser)
 
 		// send message to socket server
-		setSendMessage({ ...message, receiverId });
+		setSendMessage({ ...message, receiverId })
 
 		// send message to database
 		try {
-			const { data } = await addMessage(message);
-			setMessages([...messages, data]);
-			setNewMessage('');
-			resetUpload();
+			const { data } = await Message.create(message)
+			setMessages([...messages, data])
+			setNewMessage('')
+			resetUpload()
 		} catch {
-			console.log('error');
+			console.log('error')
 		}
-	};
+	}
 
 	// Receive Message from parent component
 	useEffect(() => {
-		// console.log('Message Arrived: ', receivedMessage);
+		// console.log('Message Arrived: ', receivedMessage)
 		if (receivedMessage !== null && receivedMessage.chatId === chat._id) {
-			setMessages([...messages, receivedMessage]);
+			setMessages([...messages, receivedMessage])
 		}
-	}, [receivedMessage]);
+	}, [receivedMessage])
 
-	const scroll = useRef();
-	const imageRef = useRef();
+	const scroll = useRef()
+	const imageRef = useRef()
 
 	const resetUpload = () => {
-		setImage(null);
-	};
+		setImage(null)
+	}
 
 	return (
 		<>
@@ -138,8 +139,8 @@ const ChatBox = ({ chat, currentUser, setSendMessage, receivedMessage }) => {
 										style={{ fontSize: '0.9rem' }}
 									>
 										<span>
-											{userData?.firstname}{' '}
-											{userData?.lastname}
+											{userData?.firstName}{' '}
+											{userData?.lastName}
 										</span>
 									</div>
 								</div>
@@ -165,7 +166,7 @@ const ChatBox = ({ chat, currentUser, setSendMessage, receivedMessage }) => {
 										}
 									>
 										<span>{message.text}</span>{' '}
-										<span>{format(message.createdAt)}</span>
+										<span>{message.createdAt}</span>
 									</div>
 								</>
 							))}
@@ -205,7 +206,7 @@ const ChatBox = ({ chat, currentUser, setSendMessage, receivedMessage }) => {
 				)}
 			</div>
 		</>
-	);
-};
+	)
+}
 
-export default ChatBox;
+export default ChatBox
