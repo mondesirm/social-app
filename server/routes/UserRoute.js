@@ -2,7 +2,7 @@ import { Router } from 'express'
 import auth from '../middleware/AuthMiddleware.js'
 import * as User from '../controllers/UserController.js'
 
-const router = new Router()
+export default new Router()
 	.get('/', User.all)
 	.get('/:id', User.one)
 	.put('/:id', auth, User.update)
@@ -11,6 +11,6 @@ const router = new Router()
 	.put('/:id/follow', auth, User.follow)
 	.put('/:id/unfollow', auth, User.unfollow)
 	.put('/:id/send', auth, User.send)
+	.put('/:id/join', auth, User.join)
+	.put('/:id/leave', auth, User.leave)
 	.put('/:id/cancel', auth, User.cancel)
-
-export default router

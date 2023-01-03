@@ -1,28 +1,28 @@
-import React, { Fragment, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useState } from 'react';
 
 import { useEffect } from 'react';
 import { getAllUser, getUserFriends } from '../api/UserRequests';
 import { getFriendRequest } from '../api/UserRequests';
 
 import User from './User/User';
+import { useAuth } from '../contexts/AuthContext';
 
 const FriendRequest = ({ person }) => {
-	const publicFolder = process.env.PUBLIC_FOLDER;
-	const { user } = useSelector(state => state.authReducer.currentUser);
+	// const imagesFolder = process.env.IMAGES_FOLDER;
+	const { currentUser } = useAuth()
 
 	const [friendRequest, setFriendRequest] = useState([]);
 	const [persons, setPersons] = useState([]);
 
 	useEffect(() => {
-		getFriendRequest(user._id).then(res => {
+		getFriendRequest(currentUser._id).then(res => {
 			setFriendRequest(res.data);
 		});
     }, []);
     
     useEffect(() => {
 		const fetchFriends = async () => {
-			const { data } = await getUserFriends(user._id);
+			const { data } = await getUserFriends(currentUser._id);
 			console.log(data);
 			setPersons(persons.concat(data));
 		};

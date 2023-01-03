@@ -1,23 +1,26 @@
 import dotenv from 'dotenv'
 import jwt from 'jsonwebtoken'
+import TokenExpiredError from 'jsonwebtoken'
+import { logout } from '../controllers/AuthController.js'
 
 dotenv.config()
 
-const secret = process.env.JWT_KEY
+const secret = process.env.JWT_SECRET
 
-const auth = async (req, res, next) => {
+export default async (req, res, next) => {
 	try {
 		const token = req.headers.authorization.split(' ')[1]
-		console.log(token)
 
 		if (token) {
 			const decoded = jwt.verify(token, secret)
-			console.log(decoded)
-			req.body._id = decoded?.id
+			req.body.id = decoded?.id
 		}
-		
-		next()
-	} catch (error) { console.log(error) }
-}
 
-export default auth
+		next()
+	} catch (err) {
+		if (err.name === 'TokenExpiredError') {
+			logout(req, res, next, err)
+			// res.status(401).json({ message: 'Unauthorized.' })
+		}
+	}
+}

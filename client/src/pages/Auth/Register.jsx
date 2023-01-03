@@ -4,20 +4,20 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Button, FormHelperText, FormErrorMessage, Center, chakra, FormControl, FormLabel, Heading, Input, Stack, useToast } from '@chakra-ui/react'
 
 import { Card } from '../../components/Card'
+import useMounted from '../../hooks/useMounted'
 import { Layout } from '../../components/Layout'
 import { useAuth } from '../../contexts/AuthContext'
-import useMounted from '../../hooks/useMounted'
 
 export default function Register() {
-	const { isAuthenticating, register } = useAuth()
-	const navigate = useNavigate()
-	const location = useLocation()
+	const { register } = useAuth()
 	const mounted = useMounted()
+	const dispatch = useDispatch()
+	const location = useLocation()
+	const navigate = useNavigate()
+	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [inputs, setInputs] = useState({ name: '', email: '', password: '' })
 	const [errors, setErrors] = useState(inputs)
-	const [isSubmitting, setIsSubmitting] = useState(false)
 	const toast = useToast({ isClosable: true, status: 'success' })
-	const dispatch = useDispatch()
 
 	const handleChange = ({ target: { name, value } }) => {
 		setInputs(values => ({ ...values, [name]: value }))
@@ -45,7 +45,7 @@ export default function Register() {
 			<Card maxW='md' mx='auto' mt={4}>
 				<chakra.form onSubmit={handleSubmit}>
 					<Stack spacing='6'>
-						<FormControl id='firstName'>
+						<FormControl id='firstName' isRequired isInvalid={errors.firstName}>
 							<FormLabel>First Name</FormLabel>
 							<Input name='firstName' type='text' autoComplete='firstName' autoFocus value={inputs.firstName} onBlur={handleChange} onChange={handleChange} />
 
@@ -55,7 +55,7 @@ export default function Register() {
 							}
 						</FormControl>
 
-						<FormControl id='name'>
+						<FormControl id='lastName' isRequired isInvalid={errors.lastName}>
 							<FormLabel>Last Name</FormLabel>
 							<Input name='lastName' type='text' autoComplete='lastName' autoFocus value={inputs.lastName} onBlur={handleChange} onChange={handleChange} />
 
@@ -103,7 +103,7 @@ export default function Register() {
 					<Button variant='link' onClick={() => navigate('/login')}>Already have an account?</Button>
 				</Center>
 
-				{/* <DividerWithText my={6}>OR</DividerWithText> */}
+				{/* <Separator my={6}>OR</Separator> */}
 
 				{/* <Button variant='outline' isFullWidth colorScheme='red' leftIcon={<FaGoogle />} onClick={handleGoogleSignIn}>Sign In with Google</Button> */}
 			</Card>

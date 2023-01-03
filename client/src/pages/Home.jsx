@@ -1,108 +1,239 @@
-import { useEffect, useState } from 'react'
-import { Box, Button, Card, CardBody, CardFooter, Checkbox, CheckboxGroup, Flex, Heading, HStack, Image, Text, Tooltip, VStack, Skeleton, SkeletonCircle, SkeletonText, Stack } from '@chakra-ui/react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { FaCheck, FaTimes, FaTrash } from 'react-icons/fa'
+import { Avatar, AvatarBadge, AvatarGroup, Button, ButtonGroup, Container, Editable, EditableInput, EditablePreview, Flex, FormControl, FormLabel, Heading, HStack, IconButton, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, /* Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverFooter, PopoverHeader, PopoverTrigger, */ Text, Tooltip, useColorModeValue, useDisclosure, useEditableControls } from '@chakra-ui/react'
 
+import useMounted from '../hooks/useMounted'
 import { Layout } from '../components/Layout'
+import Separator from '../components/Separator'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Home() {
-	const { currentUser } = useAuth()
+	const { currentUser, onlineUsers, update, remove } = useAuth()
+	const avatarRef = useRef()
+	const initialRef = useRef()
+	const mounted = useMounted()
+	const dispatch = useDispatch()
+	const navigate = useNavigate()
+	const [inputs, setInputs] = useState(currentUser)
+	const [isDeleting, setIsDeleting] = useState(false)
+	const [isSubmitting, setIsSubmitting] = useState(false)
+	const { isOpen, onOpen, onClose, onToggle } = useDisclosure()
 
-	/* const RoomCard = ({ room, ...rest }) => (
-		<Box p={5} shadow='md' borderWidth='1px' {...rest}>
-			<Image loading='lazy' src={room.image} />
-			<Heading fontSize='xl'>{room.name}</Heading>
-			<Tooltip label={room.owner}>
-				<Text mt={4}>{room.owner}</Text>
-			</Tooltip>
-		</Box>
-	) */
+	const format = date => {
+		date = new Date(Date.now() - new Date(date).getTime())
+		if (date.getTime() < 60000) return `${date.getMinutes()} min ago`
+		if (date.getTime() < 3600000) return `${date.getHours()}h ago`
+		return date.getDate() - 1 < 1 ? 'yesterday' : `${date.getDate() - 1}d+ ago`
+	}
 
-	const RoomCard = ({ room, ...rest }) => (
-		<Card direction={{ base: 'column', sm: 'row' }} overflow='hidden' variant='outline'>
-		<Image
-			objectFit='cover'
-			maxW={{ base: '100%', sm: '200px' }}
-			src='https://images.unsplash.com/photo-1667489022797-ab608913feeb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60'
-			alt='Caffe Latte'
-		/>
+	const EditableControls = ({ target }) => {
+		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls()
 
-		<Stack>
-			<CardBody>
-				<Heading size='md'>{room.name}</Heading>
-				{room?.description && <Text py='2'>{room?.description}</Text>}
-			</CardBody>
+		return (<>
+			{target === 'avatar' && (<Input hidden={!isEditing} py={2} px={4} ref={avatarRef} name='avatar' type='url' autoFocus onBlur={handleFormSubmit} />)}
 
-			<CardFooter>
-				<Button variant='solid' colorScheme='pink'>Enter</Button>
-			</CardFooter>
-		</Stack>
-		</Card>
-	)
+			{isEditing && (
+				<ButtonGroup pos='absolute' top='4em' m='1em 0 !important' size='sm'>
+					<IconButton icon={<FaTimes />} {...getCancelButtonProps()} />
+					<IconButton type='submit' icon={<FaCheck />} {...getSubmitButtonProps()} />
+				</ButtonGroup>
+			)}
+		</>)
+	}
+
+	const EditableAvatar = () => {
+		return (<Avatar
+			name={inputs.username}
+			loading='lazy'
+			src={'/images/avatars/' + (inputs?.avatar || 'default.png')}
+			boxSize='100px'
+			borderRadius='full'
+		/>)
+	}
+
+	const handleFormSubmit = async e => {
+		const { name, value } = e.target ?? e
+
+		setIsSubmitting(true)
+
+		if (currentUser[name] === value) {
+			mounted.current && setIsSubmitting(false)
+			return
+		}
+
+		setInputs(values => ({ ...values, [name]: value }))
+
+		switch (name) {
+			case 'email':
+			case 'password':
+				if (!isDeleting) {
+					dispatch(update(currentUser._id, inputs, true))
+				} else {
+					dispatch(remove(currentUser._id, inputs))
+				}
+
+				onClose()
+				mounted.current && setIsDeleting(false)
+				break
+			default:
+				console.log(name, 'is', value)
+				dispatch(update(currentUser._id, inputs))
+				break
+		}
+
+		mounted.current && setIsSubmitting(false)
+	}
+
+	useEffect(() => setInputs(currentUser), [currentUser])
 
 	return (
 		<Layout>
-			{currentUser && (<>
-				<Heading size='md' mt={8} mb={2}>Joined Rooms</Heading>
-			</>)}
+			<Heading>Account</Heading>
 
-			{currentUser?.rooms.length > 0 ? (<>
-				<HStack spacing={8}>
-					{currentUser?.rooms.map(room => (<RoomCard key={room._id} room={room} />))}
-				</HStack>
-			</>) : (<>
-				<SkeletonText>Create a new room</SkeletonText>
-				<SkeletonText>Create a new room</SkeletonText>
+			<pre>{JSON.stringify(onlineUsers, null, 2)}</pre>
 
-				<HStack spacing={8}>
-					{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(index => (
-						<Skeleton key={index} height='200px' width='200px' />
-					))}
-				</HStack>
-			</>)}
+			<Container maxW='container.lg' overflowX='auto' py={4}>
+				<Flex w='100%' columnGap='.5em'>
+					<FormControl>
+						{/* <FormLabel>Avatar</FormLabel> */}
 
-			{/* { currentUser && <pre>{JSON.stringify(currentUser, null, 2)}</pre> } */}
+						<Editable isDisabled defaultValue={<EditableAvatar />} onClick={() => avatarRef.current.click()}>
+							<Tooltip label='Read Only'>
+								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue('gray.100', 'gray.700') }} />
+							</Tooltip>
 
-			<Flex mt={4} justify='space-around'>
-				<CheckboxGroup colorScheme='green'>
-					<VStack align='stretch'>
-						<Heading size='md'>Base features</Heading>
+							<HStack>
+								<EditableControls target='avatar' />
+							</HStack>
+						</Editable>
+					</FormControl>
 
-						{[
-							'Error pages',
-							'Protected routes',
-							'Authentication with credentials',
-							'Authentication with third-party providers',
-							'Password reset from login and profile pages',
-							'Redirection to or back from state',
-							'Custom hooks: useAuth() and useMounted()',
-							'Loading indicators during form submission',
-							'Dark mode'
-						].map((feature, index) => (
-							<Checkbox key={index} defaultChecked>{feature}.</Checkbox>
+					<FormControl>
+						<FormLabel>First Name</FormLabel>
+
+						<Editable defaultValue={inputs.firstName}>
+							<Tooltip label='Click to edit first Name'>
+								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue('gray.100', 'gray.700') }} border='1px solid' borderColor='whiteAlpha.100' borderRadius='md' />
+							</Tooltip>
+
+							<HStack justifyContent='space-between'>
+								<Input py={2} px={4} as={EditableInput} name='firstName' type='text' autoComplete='firstName' autoFocus value={inputs.firstName} required onBlur={handleFormSubmit} />
+								<EditableControls target='firstName' />
+							</HStack>
+						</Editable>
+					</FormControl>
+
+					<FormControl>
+						<FormLabel>Last Name</FormLabel>
+
+						<Editable defaultValue={inputs.lastName}>
+							<Tooltip label='Click to edit last name'>
+								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue('gray.100', 'gray.700') }} border='1px solid' borderColor='whiteAlpha.100' borderRadius='md' />
+							</Tooltip>
+
+							<HStack justifyContent='space-between'>
+								<Input py={2} px={4} as={EditableInput} name='lastName' type='text' autoComplete='lastName' autoFocus value={inputs.lastName} required onBlur={handleFormSubmit} />
+								<EditableControls target='lastName' />
+							</HStack>
+						</Editable>
+					</FormControl>
+
+					<FormControl>
+						<FormLabel>Username</FormLabel>
+
+						<Editable defaultValue={inputs.username}>
+							<Tooltip label='Click to edit username'>
+								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue('gray.100', 'gray.700') }} border='1px solid' borderColor='whiteAlpha.100' borderRadius='md' />
+							</Tooltip>
+
+							<HStack justifyContent='space-between'>
+								<Input py={2} px={4} as={EditableInput} name='username' type='text' autoComplete='username' autoFocus value={inputs.username} required onBlur={handleFormSubmit} />
+								<EditableControls target='username' />
+							</HStack>
+						</Editable>
+					</FormControl>
+
+					<FormControl>
+						<FormLabel>Email Address</FormLabel>
+
+						<Editable defaultValue={inputs.email}>
+							<Tooltip label='Click to edit email address'>
+								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue('gray.100', 'gray.700') }} border='1px solid' borderColor='whiteAlpha.100' borderRadius='md' />
+							</Tooltip>
+
+							<HStack justifyContent='space-between'>
+								<Input py={2} px={4} as={EditableInput} name='email' type='email' autoComplete='email' autoFocus value={inputs.email} required onBlur={(e) => { if (currentUser.email !== e.target.value) { setInputs(values => ({ ...values, email: e.target.value })); onOpen() } }} />
+								<EditableControls target='email' />
+							</HStack>
+						</Editable>
+					</FormControl>
+
+					<FormControl>
+						<FormLabel>Password</FormLabel>
+						<Button variant='outline' onClick={() => navigate('/reset-password')} colorScheme='orange' size='md' fontSize='md'>Reset</Button>
+					</FormControl>
+				</Flex>
+
+				{currentUser?.following.length > 0 && (<>
+					<Separator my={6}>Following</Separator>
+
+					<AvatarGroup size='md' max={2}>
+						{currentUser.following.map(user => (
+							<Avatar key={user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')}>
+								<Tooltip label={user.username + (onlineUsers.some(u => u._id === user._id) ? ' is online' : ' was last seen ' + format(user.lastSeen))} placement='top'>
+									<AvatarBadge boxSize='1em' bg={onlineUsers.some(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
+								</Tooltip>
+							</Avatar>
 						))}
-					</VStack>
-				</CheckboxGroup>
+					</AvatarGroup>
+				</>)}
 
-				<CheckboxGroup colorScheme='teal'>
-					<VStack align='stretch'>
-						<Heading size='md'>Main features</Heading>
+				{currentUser?.followers.length > 0 && (<>
+					<Separator my={6}>Followers</Separator>
 
-						{[
-							'Error pages',
-							'Protected routes',
-							'Authentication with credentials',
-							'Authentication with third-party providers',
-							'Password reset from login and profile pages',
-							'Redirection to or back from state',
-							'Custom hooks: useAuth() and useMounted()',
-							'Loading indicators during form submission',
-							'Dark mode'
-						].map((feature, index) => (
-							<Checkbox key={index} defaultChecked>{feature}.</Checkbox>
+					<AvatarGroup size='md' max={2}>
+						{currentUser.followers.map(user => (
+							<Avatar key={user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')} onClick={onToggle}>
+								<Tooltip label={user.username + (onlineUsers.some(u => u._id === user._id) ? ' is online' : ' was last seen ' + format(user.lastSeen))} placement='top'>
+									<AvatarBadge boxSize='1em' bg={onlineUsers.some(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
+								</Tooltip>
+							</Avatar>
 						))}
-					</VStack>
-				</CheckboxGroup>
-			</Flex>
+					</AvatarGroup>
+				</>)}
+
+				<Separator my={6} textColor='red'>DANGER ZONE</Separator>
+
+				<Tooltip label='Irreversible'>
+					<Button variant='outline' colorScheme='red' leftIcon={<FaTrash />} onClick={() => { setIsDeleting(true); onOpen() }} isLoading={isSubmitting}>Delete Account</Button>
+				</Tooltip>
+			</Container>
+
+			<Modal initialFocusRef={initialRef} isOpen={isOpen} onClose={onClose} isCentered>
+				<ModalOverlay />
+
+				<ModalContent>
+					<ModalHeader>{isDeleting ? 'Deleting Account' : 'Updating Email'}</ModalHeader>
+
+					<ModalCloseButton />
+
+					<ModalBody pb={6}>
+						<Text fontSize='sm'>This action is irreversible.</Text>
+
+						<FormControl id='password' mt={4}>
+							<FormLabel>Password</FormLabel>
+							<Input ref={initialRef} name='password' type='password' autoComplete='password' required />
+						</FormControl>
+					</ModalBody>
+
+					<ModalFooter>
+						<Button colorScheme='blue' mr={3} onClick={(e) => handleFormSubmit(initialRef.current)} isLoading={isSubmitting}>Confirm</Button>
+						<Button onClick={onClose}>Cancel</Button>
+					</ModalFooter>
+				</ModalContent>
+			</Modal>
 		</Layout>
 	)
 }

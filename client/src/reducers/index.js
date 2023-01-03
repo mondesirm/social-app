@@ -1,6 +1,7 @@
-import { combineReducers } from 'redux';
+import { combineReducers } from 'redux'
 
-import authReducer from './AuthReducer';
-import chatReducer from './ChatUserReducer';
+import authReducer from './AuthReducer'
+import chatReducer from './ChatReducer'
+import databaseReducer from './DatabaseReducer'
 
-export const reducers = combineReducers({ authReducer, chatReducer });
+export default combineReducers({ authReducer, chatReducer, databaseReducer })

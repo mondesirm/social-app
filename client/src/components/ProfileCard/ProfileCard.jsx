@@ -1,40 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+
 import './ProfileCard.css';
-import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
 import * as UserApi from '../../api/UserRequests.js';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ProfileCard = ({ location }) => {
-	const { user } = useSelector(state => state.authReducer.currentUser);
+	const { currentUser } = useAuth()
+
 	// Get path from location
 	const params = useParams();
-	const profileUserId = params.id ?? user._id;
-	const [profileUser, setProfileUser] = useState(user);
+	const profileUserId = params.id ?? currentUser._id;
+	const [profileUser, setProfileUser] = useState(currentUser);
 
 	useEffect(() => {
 		const fetchProfileUser = async () => {
-			if (profileUserId === user._id) {
-				setProfileUser(user);
+			if (profileUserId === currentUser._id) {
+				setProfileUser(currentUser);
 			} else {
 				const { data } = await UserApi.one(profileUserId);
 				setProfileUser(data);
 			}
 		};
 		fetchProfileUser();
-	}, [profileUserId, user]);
+	}, [profileUserId, currentUser]);
 
 	return (
 		<div className='ProfileCard'>
 			<div className='ProfileImages'>
-				<img
-					src={'/images/defaultCover.jpg'}
-					alt='CoverImage'
-				/>
-				<img
-					src={'/images/defaultProfile.png'}
-					alt='ProfileImage'
-				/>
+			{/* src={'/images/banners/' + (inputs?.banner || 'default.png')} */}
+				<img src={'/images/banners/' + currentUser?.banner} alt='CoverImage' />
+				<img src={'/images/avatars/' + currentUser?.avatar} alt='ProfileImage' />
 			</div>
 			<div className='ProfileName'>
 				<span>
@@ -43,7 +39,7 @@ const ProfileCard = ({ location }) => {
 				
 				<span>
 					{profileUser.rooms.map(room => (
-						<span>{room.name} by {room.owner.fullName}</span>
+						<span key={room._id}>{room.name} ({room.limits})</span>
 					))}
 				</span>
 			</div>

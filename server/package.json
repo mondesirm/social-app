@@ -8,7 +8,7 @@
   "type": "module",
   "license": "ISC",
   "scripts": {
-    "init": "node models/mongo/init.js",
+    "migrate": "node migrate.js",
     "start": "nodemon index.js",
     "build": "node index.js"
   },

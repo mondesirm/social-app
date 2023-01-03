@@ -1,31 +1,31 @@
-import React, { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useEffect, useState } from 'react'
 
 import './FromUsersCard.css'
 import UserLine from '../User/User'
 import * as User from '../../api/UserRequests'
+import { useAuth } from '../../contexts/AuthContext'
 import FromUsersModal from '../FromUsersModal/FromUsersModal'
 
 const FromUsersCard = ({ location }) => {
-	const [modalOpened, setModalOpened] = useState(false)
+	const { currentUser } = useAuth()
 	const [persons, setPersons] = useState([])
-	const { user } = useSelector(state => state.authReducer.currentUser)
+	const [modalOpened, setModalOpened] = useState(false)
 
 	useEffect(() => {
 		const fetchPersons = async () => {
 			const { data } = await User.all()
-			setPersons(persons.concat(data))
+			setPersons(data)
 		}
 		fetchPersons()
-	})
+	}, [currentUser])
 
 	return (
 		<div className='FromUsersCard'>
 			<h3>People you may know</h3>
 
 			{persons.map((person, id) => {
-				if (person._id !== user._id)
-					return <UserLine person={person} key={id} />
+				if (person._id !== currentUser._id) return <UserLine person={person} key={id} />
+				return ''
 			})}
 			{!location ? (
 				<span onClick={() => setModalOpened(true)}>Show more</span>

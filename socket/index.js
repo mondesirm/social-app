@@ -1,37 +1,43 @@
 import { Server } from 'socket.io'
 
-const io = new Server(process.env.SOCKET_PORT, { cors: { origin: process.env.CLIENT_HOST } })
-let activeUsers = []
+const io = new Server(process.env.SOCKET_PORT, { cors: { origin: process.env.CLIENT_HOST.slice(0, -1) } })
+let onlineUsers = []
 
 // io.of('/chat').on
 io.on('connection', socket => {
-	// Add new User
-	socket.on('new-user-add', newUserId => {
-		// If user is not added previously
-		if (!activeUsers.some(user => user.userId === newUserId)) {
-			activeUsers.push({ userId: newUserId, socketId: socket.id })
-			console.log('New User Connected', activeUsers)
-		}
+	// When user logs in
+	socket.on('add-user', _id => {
+		// Push user if not added previously
+		if (!onlineUsers.some(u => u._id === _id)) onlineUsers.push({ _id, socket: socket.id })
 
-		// Send all active users to new user
-		io.emit('get-users', activeUsers)
+		// Send all online users
+		io.emit('get-users', onlineUsers)
 	})
 
+	// When page is refreshed
 	socket.on('disconnect', () => {
-		// Remove user from active users
-		activeUsers = activeUsers.filter(user => user.socketId !== socket.id)
-		console.log('User Disconnected', activeUsers)
-		// Send all active users to all users
-		io.emit('get-users', activeUsers)
+		// Remove user from online users
+		onlineUsers = onlineUsers.filter(u => u.socket !== socket.id)
+
+		// Send all online users
+		io.emit('get-users', onlineUsers)
+	})
+
+	// When user logs out
+	socket.on('logout', () => {
+		// Remove user from online users
+		onlineUsers = onlineUsers.filter(u => u.socket !== socket.id)
+
+		// Send all online users
+		io.emit('get-users', onlineUsers)
 	})
 
 	// Send message to a specific user
 	socket.on('send-message', data => {
-		const { receiverId } = data
-		const user = activeUsers.find(user => user.userId === receiverId)
-		console.log('Sending from socket to:', receiverId)
-		console.log('Data: ', data)
+		const { receiver } = data
+		const user = onlineUsers.find(u => u._id === receiver._id)
+		console.log('Sending data from socket to:', receiver._id, data)
 
-		if (user) io.to(user.socketId).emit('receive-message', data)
+		if (user) io.to(user.socket).emit('receive-message', data)
 	})
 })

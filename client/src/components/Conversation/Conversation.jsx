@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
 
-import * as User from '../../api/UserRequests';
+import * as User from '../../api/UserRequests'
+import { useAuth } from '../../contexts/AuthContext'
 
-const Conversation = ({ data, currentUser, online }) => {
-	const [userData, setUserData] = useState(null);
-	const dispatch = useDispatch();
+export default function Conversation({ chat, online }) {
+	const { currentUser } = useAuth()
+	const [userData, setUserData] = useState(null)
+	const dispatch = useDispatch()
 
 	useEffect(() => {
-		const userId = data.members.find(id => id !== currentUser);
+		const other = chat.members.find(member => member._id !== currentUser._id)
+
 		const getUserData = async () => {
 			try {
-				const { data } = await User.one(userId);
+				const { data } = await User.one(other._id);
 				setUserData(data);
 				dispatch({ type: 'SAVE_USER', data: data });
 			} catch (error) {
@@ -20,7 +23,7 @@ const Conversation = ({ data, currentUser, online }) => {
 		};
 
 		getUserData();
-	});
+	}, [chat.members, currentUser._id, dispatch]);
 
 	return (
 		<>
@@ -28,7 +31,7 @@ const Conversation = ({ data, currentUser, online }) => {
 				<div>
 					{online && <div className='online-dot'></div>}
 					<img
-						src={'/images/defaultProfile.png'}
+						src={'/images/avatars/' + currentUser?.avatar}
 						alt='Profile'
 						className='fromUserImage'
 						style={{ width: '50px', height: '50px' }}
@@ -48,5 +51,3 @@ const Conversation = ({ data, currentUser, online }) => {
 		</>
 	);
 };
-
-export default Conversation;

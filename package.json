@@ -7,10 +7,13 @@
   "type": "module",
   "license": "ISC",
   "scripts": {
-    "init": "docker compose exec server npm run init",
     "start": "docker compose up -d",
     "stop": "docker compose stop",
-    "build": "docker compose build --no-cache"
+    "build": "docker compose build --no-cache",
+    "migrate": "docker compose exec server npm run migrate",
+    "drop": "npm run migrate drop",
+    "seed": "npm run migrate seed",
+    "refresh": "npm run migrate drop seed"
   },
   "repository": {
     "type": "git",

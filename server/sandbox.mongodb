@@ -5,8 +5,8 @@ use(database)
 // Create a new collection.
 // db.createCollection(collection)
 
-// Get all collections in the database.
-db.getCollectionNames()
+//? Get all collections in the database.
+// db.getCollectionNames()
 
 //? Reset (when the website is bugged)
 // db.chats.deleteMany({})
@@ -17,3 +17,4 @@ db.getCollectionNames()
 // db.users.deleteMany({ username: "root" })
 // db.users.find({ firstName: { $regex: /(Malik|Test)/ } }, { username: 1, followers: 1, following: 1 })
 // db.chats.find({ members: { $all: [ "62aa858dec508d7f97cfba26", "62aa85daec508d7f97cfba30" ] } })
+// db.users.find({ _id: ObjectId("63a873bd5e5c38116f2331b1") }, { username: 1, chats: 1 })

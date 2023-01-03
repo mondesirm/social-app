@@ -7,7 +7,7 @@ import './ProfileModal.css'
 import { useAuth } from '../../contexts/AuthContext'
 
 const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
-	const { user, update } = useAuth()
+	const { currentUser, update } = useAuth()
 	const { password, ...other } = data;
 	const [formData, setFormData] = useState(other);
 	const dispatch = useDispatch();
@@ -57,8 +57,8 @@ const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
 				</div>
 
 				<span>
-					{user.rooms.map(room => (
-						<span>{room.name} by {room.owner.fullName}</span>
+					{currentUser.rooms.map(room => (
+						<span key={room._id}>{room.name} ({room.limits})</span>
 					))}
 				</span>
 

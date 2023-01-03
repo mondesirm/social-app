@@ -1,75 +1,58 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import User from '../models/mongo/User.js'
+
+import Room from '../models/Room.js'
+import User from '../models/User.js'
+
+export const all = async (req, res) => {
+	try {
+		const users = await User.find().select('-password -token -__v')
+		res.status(200).json(users)
+	} catch (err) { res.status(500).json(err) }
+}
 
 export const one = async (req, res) => {
 	const id = req.params.id
 
 	try {
-		const user = await User.findById(id)
+		const user = await User.findById(id).select('-password -token -__v').populate('chats').populate('rooms').populate('following').populate('followers')
 
-		if (user) {
-			//! TODO remove
-			/* eslint-disable no-unused-vars */
-			const { password, ...rest } = user._doc
+		if (!user) return res.status(404).json({ message: 'User not found.' })
 
-			res.status(200).json(rest)
-		} else {
-			res.status(404).json('No such User')
-		}
+		res.status(200).json(user)
 	} catch (err) { res.status(500).json(err) }
 }
 
 export const friends = async (req, res) => {
-	// const { id } = req.params.id
+	const { id } = req.params.id
 
 	try {
-		// const user = await User.findById(id)
+		const user = await User.findById(id).select('-password -token -__v').populate('chats').populate('rooms').populate('following').populate('followers')
 
-		let users = await User.find({ username: 'john@gmail.com' })
+		if (!user) return res.status(404).json({ message: 'User not found.' })
 
-		// users = users.map((user) => {
-		// 	const { password, ...rest } = user._doc
-		// 	return rest
-		// })
-		res.status(200).json(users)
-	} catch (err) { res.status(500).json(err) }
-}
-
-export const all = async (req, res) => {
-	try {
-		let users = await User.find()
-		users = users.map(user => {
-			const { password, ...rest } = user._doc
-			return rest
-		})
-		res.status(200).json(users)
+		const friends = user.following.filter(other => other.following.includes(user._id))
+		res.status(200).json(friends)
 	} catch (err) { res.status(500).json(err) }
 }
 
 export const update = async (req, res) => {
 	const id = req.params.id
-	// console.log("Data Received", req.body)
-	const { _id, /* currentUserAdmin, */ password } = req.body
+	const { _id, password } = req.body
 
-	if (id === _id) {
-		try {
-			// if we also have to update password then password will be bcrypted again
-			if (password) {
-				const salt = await bcrypt.genSalt(10)
-				req.body.password = await bcrypt.hash(password, salt)
-			}
-			// have to change this
-			const user = await User.findByIdAndUpdate(id, req.body, { new: true })
-			const token = jwt.sign(
-				{ username: user.username, id: user._id },
-				process.env.JWT_KEY,
-				{ expiresIn: '1h' }
-			)
-			// console.log({user, token})
-			res.status(200).json({ user, token })
-		} catch (err) { res.status(500).json(err) }
-	} else res.status(403).json({ message: 'You can only update your own account.' })
+	if (id !== _id) return res.status(403).json({ message: 'You can only update your own account.' })
+
+	try {
+		if (password) {
+			const salt = await bcrypt.genSalt(10)
+			req.body.password = await bcrypt.hash(password, salt)
+		}
+
+		const user = await User.findByIdAndUpdate(id, req.body, { new: true })
+		user.token = jwt.sign({ username: user.username, id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
+		await user.save()
+		res.status(200).json(user)
+	} catch (err) { res.status(500).json(err) }
 }
 
 export const remove = async (req, res) => {
@@ -80,61 +63,98 @@ export const remove = async (req, res) => {
 	if (currentUserId == id || currentUserAdmin) {
 		try {
 			await User.findByIdAndDelete(id)
-			res.status(200).json('User Deleted Successfully!')
-		} catch (err) {
-			res.status(500).json(err)
-		}
-	} else { res.status(403).json('Access Denied!') }
+			res.status(200).json({ message: 'User deleted successfully!' })
+		} catch (err) { res.status(500).json(err) }
+	} else { res.status(403).json('Access denied!') }
 }
 
 export const follow = async (req, res) => {
-	const id = req.params.id
+	const { id } = req.params
 	const { _id } = req.body
-	console.log(id, _id)
-	if (_id == id) res.status(403).json('Action Forbidden')
-	else {
-		try {
-			const user = await User.findById(_id)
-			const toUser = await User.findById(id)
 
-			if (!user.following.includes(id)) {
-				await user.updateOne({ $push: { following: id } })
-				await toUser.updateOne({ $push: { followers: _id } })
+	if (id === _id) return res.status(403).json({ message: 'You cannot follow yourself.' })
 
-				const token = jwt.sign(
-					{ username: user.username, id: user._id },
-					process.env.JWT_KEY,
-					{ expiresIn: '1h' }
-				)
-				res.status(200).json({ user, token })
-			} else res.status(403).json('You are already following this user.')
-		} catch (err) { res.status(500).json(err) }
-	}
+	try {
+		const self = await User.findById(id).populate('chats').populate('rooms').populate('following').populate('followers')
+		const other = await User.findById(_id)
+
+		if (!self) return res.status(404).json({ message: 'Logged in user not found.' })
+		if (!other) return res.status(404).json({ message: 'User to unfollow not found.' })
+		if (other.followers.includes(id)) return res.status(403).json({ message: 'You already follow this user.' })
+
+		self.following.push(other)
+		other.followers.push(self)
+
+		self.save()
+		other.save()
+
+		res.status(200).json(self)
+	} catch (err) { res.status(500).json(err) }
 }
 
 export const unfollow = async (req, res) => {
-	const id = req.params.id
+	const { id } = req.params
 	const { _id } = req.body
 
-	if (_id === id) res.status(403).json('Action Forbidden')
-	else {
-		try {
-			const user = await User.findById(_id)
-			const toUser = await User.findById(id)
+	if (id === _id) return res.status(403).json({ message: 'You cannot unfollow yourself.' })
 
-			if (user.following.includes(id)) {
-				await user.updateOne({ $pull: { following: id } })
-				await toUser.updateOne({ $pull: { followers: _id } })
+	try {
+		const self = await User.findById(id).populate('chats').populate('rooms').populate('following').populate('followers')
+		const other = await User.findById(_id)
 
-				const token = jwt.sign(
-					{ username: user.username, id: user._id },
-					process.env.JWT_KEY,
-					{ expiresIn: '1h' }
-				)
-				res.status(200).json({ user, token })
-			} else res.status(403).json('You are not following this user.')
-		} catch (err) { res.status(500).json(err) }
-	}
+		if (!self) return res.status(404).json({ message: 'Logged in user not found.' })
+		if (!other) return res.status(404).json({ message: 'User to unfollow not found.' })
+		if (!other.followers.includes(id)) return res.status(403).json({ message: 'You do not follow this user yet.' })
+
+		self.following = self.following.filter(f => f._id != _id)
+		other.followers = other.followers.filter(f => f._id != id)
+
+		self.save()
+		other.save()
+
+		res.status(200).json(self)
+	} catch (err) { res.status(500).json(err) }
+}
+
+export const join = async (req, res) => {
+	const { id } = req.params
+	const { _id } = req.body
+
+	try {
+		const user = await User.findById(id).populate('chats').populate('rooms').populate('following').populate('followers')
+		const room = await Room.findById(_id)
+
+		if (!user) return res.status(404).json({ message: 'User not found.' })
+		if (!room) return res.status(404).json({ message: 'Room not found.' })
+		if (room.members.includes(id)) return res.status(403).json({ message: 'You are already a member of this room.' })
+
+		await user.updateOne({ $push: { rooms: room } })
+		await room.updateOne({ $push: { members: user } })
+
+		res.status(200).json(user)
+	} catch (err) { res.status(500).json(err) }
+}
+
+export const leave = async (req, res) => {
+	const { id } = req.params
+	const { _id } = req.body
+
+	try {
+		const user = await User.findById(id).populate('chats').populate('rooms').populate('following').populate('followers')
+		const room = await Room.findById(_id)
+
+		if (!user) return res.status(404).json({ message: 'User not found.' })
+		if (!room) return res.status(404).json({ message: 'Room not found.' })
+		if (!room.members.includes(id)) return res.status(403).json({ message: 'You are not a member of this room.' })
+
+		user.rooms = user.rooms.filter(room => room._id != _id)
+		room.members = room.members.filter(member => member._id != id)
+
+		user.save()
+		room.save()
+
+		res.status(200).json(user)
+	} catch (err) { res.status(500).json(err) }
 }
 
 export const send = async (req, res) => {

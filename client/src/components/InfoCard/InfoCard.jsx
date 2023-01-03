@@ -8,34 +8,32 @@ import * as User from '../../api/UserRequests.js'
 import { useAuth } from '../../contexts/AuthContext'
 
 const InfoCard = () => {
-	const { user, logout } = useAuth()
+	const { currentUser, logout } = useAuth()
 	const dispatch = useDispatch()
 	const params = useParams()
 	const [modalOpened, setModalOpened] = useState(false)
-	const profileUserId = params.id
-	const [profileUser, setProfileUser] = useState(user)
+	const profileUserId = params?.id || currentUser._id
+	const [profileUser, setProfileUser] = useState(currentUser)
 
-	const handleLogOut = () => {
-		dispatch(logout())
-	}
+	const handleLogOut = () => dispatch(logout())
 
 	useEffect(() => {
 		const fetchProfileUser = async () => {
-			if (profileUserId === user._id) {
-				setProfileUser(user)
+			if (profileUserId === currentUser._id) {
+				setProfileUser(currentUser)
 			} else {
 				const { data } = await User.one(profileUserId)
 				setProfileUser(data)
 			}
 		}
 		fetchProfileUser()
-	}, [profileUserId, user])
+	}, [profileUserId, currentUser])
 
 	return (
 		<div className='InfoCard'>
 			<div className='infoHead'>
 				<h4>Profile Info</h4>
-				{user._id === profileUserId ? (
+				{currentUser._id === profileUserId ? (
 					<div>
 						<EditIcon
 							width='2rem'
@@ -79,7 +77,7 @@ const InfoCard = () => {
 				</span>
 				<span>
 					{profileUser.rooms.map(room => (
-						<span>{room.name} by {room.owner.fullName}</span>
+						<span key={room._id}>{room.name} ({room.limits})</span>
 					))}
 				</span>
 			</div>

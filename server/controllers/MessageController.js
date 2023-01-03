@@ -1,20 +1,28 @@
-import Message from '../models/mongo/Message.js'
+import Message from '../models/Message.js'
 
 export const create = async (req, res) => {
-	const { chatId, senderId, text } = req.body
-	const message = new Message({ chatId, senderId, text })
-
+	const { chat, sender, text } = req.body
+	
 	try {
-		const result = await message.save()
-		res.status(200).json(result)
+		// const chat = await Chat.findById(chat._id)
+		// const sender = await User.findById(sender._id)
+
+		// if (!chat) return res.status(404).json({ message: 'Chat does not exist.' })
+		// if (!sender) return res.status(404).json({ message: 'Logged in sender does not exist.' })
+
+		const message = new Message({ chat, sender, text })
+
+		await message.populate('chat')
+		await message.populate('sender')
+		await message.save()
+
+		res.status(200).json(message)
 	} catch (err) { res.status(500).json(err) }
 }
 
 export const of = async (req, res) => {
-	const { chatId } = req.params
-
 	try {
-		const result = await Message.find({ chatId })
-		res.status(200).json(result)
-	} catch (error) { res.status(500).json(error) }
+		const messages = await Message.find({ chat: req.params.id }).populate('chat').populate('sender', '-password -token -__v')
+		res.status(200).json(messages)
+	} catch (err) { res.status(500).json(err) }
 }

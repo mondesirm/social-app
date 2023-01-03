@@ -5,18 +5,18 @@ import { useDispatch } from 'react-redux'
 import { useAuth } from '../../contexts/AuthContext'
 
 const User = ({ person }) => {
-	// const publicFolder = process.env.PUBLIC_FOLDER;
-	const { user, follow, unfollow } = useAuth()
+	// const publicFolder = process.env.IMAGES_FOLDER;
+	const { currentUser, follow, unfollow } = useAuth()
 	const dispatch = useDispatch();
 
 	const [following, setFollowing] = useState(
-		user.following.includes(person._id)
+		currentUser.following.includes(person._id)
 	);
 	const handleFollow = () => {
 		// console.log(person._id);
 		following
-			? dispatch(unfollow(person._id, user))
-			: dispatch(follow(person._id, user));
+			? dispatch(unfollow(person._id, currentUser))
+			: dispatch(follow(person._id, currentUser));
 		setFollowing(prev => !prev);
 	};
 
@@ -24,15 +24,15 @@ const User = ({ person }) => {
 		<div className='fromUser'>
 			<Link to={`/profile/${person._id}`} style={{ display: 'flex', textDecoration: 'none' }}>
 				<img
-					src={'/images/defaultProfile.png'}
+					src={'/images/' + person?.avatar}
 					alt='profile'
 					className='fromUserImage'
 				/>
 				<div className='name'>
 					<span>{person.firstName} {person.lastName}</span>
 					<span>{person.username}</span>
-					{person.following.includes(user._id) &&
-						<span>{person.followers.includes(user._id) ? "(Friends)" : "(Following you)"}</span>
+					{person.following.includes(currentUser._id) &&
+						<span>{person.followers.includes(currentUser._id) ? "(Friends)" : "(Following you)"}</span>
 					}
 				</div>
 			</Link>

@@ -46,6 +46,8 @@ services:
     build:
       context: ./client
     container_name: social-app-client
+    depends_on:
+      - server
     volumes:
       - ./client:/usr/local/client
       - /usr/local/client/node_modules
@@ -61,6 +63,8 @@ services:
     build:
       context: ./server
     container_name: social-app-server
+    depends_on:
+      - mongo
     volumes:
       - ./server:/usr/local/server
       - /usr/local/server/node_modules
@@ -85,6 +89,8 @@ services:
       - ./.env
     ports:
       - ${SOCKET_PORT}:${SOCKET_PORT}
+    networks:
+      - proxy
 
 networks:
     database:

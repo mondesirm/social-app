@@ -12,7 +12,7 @@ import {
 import React, { useState } from 'react'
 import { useHistory } from 'react-router-dom'
 import { Card } from '../../components/Card'
-import DividerWithText from '../../components/DividerWithText'
+import Separator from '../../components/Separator'
 import { Layout } from '../../components/Layout'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -69,7 +69,7 @@ export default function ForgotPassword() {
             </Button>
           </Stack>
         </chakra.form>
-        <DividerWithText my={6}>OR</DividerWithText>
+        <Separator my={6}>OR</Separator>
         <Center>
           <Button variant='link' onClick={() => history.push('/login')}>
             Login
