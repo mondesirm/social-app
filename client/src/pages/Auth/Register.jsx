@@ -15,9 +15,9 @@ export default function Register() {
 	const location = useLocation()
 	const navigate = useNavigate()
 	const [isSubmitting, setIsSubmitting] = useState(false)
-	const [inputs, setInputs] = useState({ name: '', email: '', password: '' })
-	const [errors, setErrors] = useState(inputs)
 	const toast = useToast({ isClosable: true, status: 'success' })
+	const [inputs, setInputs] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' })
+	const [errors, setErrors] = useState(inputs)
 
 	const handleChange = ({ target: { name, value } }) => {
 		setInputs(values => ({ ...values, [name]: value }))

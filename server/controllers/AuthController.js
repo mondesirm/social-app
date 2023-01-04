@@ -10,15 +10,14 @@ export const login = async (req, res) => {
 	const { identifier, password } = req.body
 
 	try {
-		const user = await User.findOne({ username: identifier }).populate('rooms').populate('following').populate('followers')
+		const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] }).populate('rooms').populate('following').populate('followers')
 
-		if (!user) return res.status(404).json({ message: `User ${identifier} not found.` })
+		if (!user) return res.status(404).json({ message: 'User not found.' })
 
 		const validity = await bcrypt.compare(password, user.password)
 
 		if (!validity) return res.status(400).json({ message: 'Wrong password.' })
 
-		user.isOnline = true
 		user.lastSeen = Date.now()
 		user.token = jwt.sign({ username: user.username, id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 		await user.save()
@@ -28,16 +27,15 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
 	const salt = await bcrypt.genSalt(10)
-	const { username, password } = req.body
+	const { username, email, password } = req.body
 	req.body.password = await bcrypt.hash(password, salt)
 
 	try {
-		const user = await User.findOne({ username })
+		var user = await User.findOne({ $or: [{ username: username }, { email: email }] })
 
-		if (oldUser) return res.status(400).json({ message: `User ${username} already exists.` })
+		if (user) return res.status(400).json({ message: 'User already exists.' })
 
 		user = new User(req.body)
-		user.isOnline = true
 		user.lastSeen = Date.now()
 		user.token = jwt.sign({ username: user.username, id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 		await user.save()
@@ -67,8 +65,7 @@ export const logout = async (req, res, next, err = null) => {
 
 		if (!user) return res.status(400).json({ message: 'Logged in user not found.' })
 
-		user.isOnline = false
-		user.lastSeen = Date.now() // expiredAt
+		user.lastSeen = Date.now()
 		user.token = ''
 		await user.save()
 		res.status(200).json({ message: 'User logged out.' })
