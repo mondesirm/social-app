@@ -19,7 +19,7 @@ export const create = async (req, res) => {
 		self.chats.push(newChat)
 		other.chats.push(newChat)
 
-		await newChat.populate('members', '-password -token -__v')
+		await newChat.populate('members', '-password')
 		await newChat.populate('messages')
 
 		await newChat.save()
@@ -33,9 +33,17 @@ export const create = async (req, res) => {
 	}
 }
 
+export const one = async (req, res) => {
+	try {
+		const chat = await Chat.findById(req.params.id).populate('members', '-password')
+		if (!chat) return res.status(404).json({ message: 'Chat not found.' })
+		res.status(200).json(chat)
+	} catch (err) { res.status(500).json(err) }
+}
+
 export const of = async (req, res) => {
 	try {
-		const chats = await Chat.find({ members: { $in: [req.params.id] } }).populate('members', '-password -token -__v')
+		const chats = await Chat.find({ members: { $in: [req.params.id] } }).populate('members', '-password')
 		res.status(200).json(chats)
 	} catch (err) { res.status(500).json(err) }
 }

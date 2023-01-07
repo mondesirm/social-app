@@ -6,7 +6,7 @@ import User from '../models/User.js'
 
 export const all = async (req, res) => {
 	try {
-		const users = await User.find().select('-password -token -__v')
+		const users = await User.find().select('-password')
 		res.status(200).json(users)
 	} catch (err) { res.status(500).json(err) }
 }
@@ -15,8 +15,7 @@ export const one = async (req, res) => {
 	const id = req.params.id
 
 	try {
-		const user = await User.findById(id).select('-password -token -__v').populate('chats').populate('rooms').populate('following').populate('followers')
-
+		const user = await User.findById(id).select('-password').populate('chats').populate('rooms').populate('following').populate('followers')
 		if (!user) return res.status(404).json({ message: 'User not found.' })
 
 		res.status(200).json(user)
@@ -27,8 +26,7 @@ export const friends = async (req, res) => {
 	const { id } = req.params.id
 
 	try {
-		const user = await User.findById(id).select('-password -token -__v').populate('chats').populate('rooms').populate('following').populate('followers')
-
+		const user = await User.findById(id).select('-password').populate('chats').populate('rooms').populate('following').populate('followers')
 		if (!user) return res.status(404).json({ message: 'User not found.' })
 
 		const friends = user.following.filter(other => other.following.includes(user._id))
@@ -37,35 +35,53 @@ export const friends = async (req, res) => {
 }
 
 export const update = async (req, res) => {
-	const id = req.params.id
-	const { _id, password } = req.body
-
-	if (id !== _id) return res.status(403).json({ message: 'You can only update your own account.' })
-
+	const { id } = req.params
+	const { _id, username, email } = req.body
+	
 	try {
-		if (password) {
-			const salt = await bcrypt.genSalt(10)
-			req.body.password = await bcrypt.hash(password, salt)
-		}
+		const self = await User.findById(id)
+		var user = await User.findById(_id)
+		const taken = await User.findOne({ $or: [{ username }, { email }] })
 
-		const user = await User.findByIdAndUpdate(id, req.body, { new: true })
+		if (!self) return res.status(404).json({ message: 'Logged in user not found.' })
+		if (!user) return res.status(404).json({ message: 'User to update not found.' })
+		if (id !== _id && !self.roles.includes('staff') === false) return res.status(403).json({ message: 'You can only update your own account unless you are staff.' })
+		if (taken && taken.email != self.email) return res.status(403).json({ message: 'Username or email already taken.' })
+
+		// TODO hash password if submitted
+		// if (req.body?.password) {
+		// 	const salt = await bcrypt.genSalt(10)
+		// 	req.body.password = await bcrypt.hash(req.body.password, salt)
+		// }
+
+		// const user = await User.findByIdAndUpdate(id, req.body, { new: true }).select('-password')
+		// merge user with req.body
+		user = Object.assign(user, req.body)
 		user.token = jwt.sign({ username: user.username, id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
-		await user.save()
+		user.save()
+
+		if (self._id === user._id) return res.status(200).json(self)
 		res.status(200).json(user)
 	} catch (err) { res.status(500).json(err) }
 }
 
 export const remove = async (req, res) => {
-	const id = req.params.id
+	const { id } = req.params
+	const { _id, password } = req.body
 
-	const { currentUserId, currentUserAdmin } = req.body
+	// TODO allow if current user is admin
+	if (id !== _id) return res.status(403).json({ message: 'You can only delete your own account.' })
 
-	if (currentUserId == id || currentUserAdmin) {
-		try {
-			await User.findByIdAndDelete(id)
-			res.status(200).json({ message: 'User deleted successfully!' })
-		} catch (err) { res.status(500).json(err) }
-	} else { res.status(403).json('Access denied!') }
+	try {
+		const user = await User.findById(id)
+		if (!user) return res.status(404).json({ message: 'User not found.' })
+
+		const validPassword = await bcrypt.compare(password, user.password)
+		if (!validPassword) return res.status(403).json({ message: 'Invalid password.' })
+
+		await User.findByIdAndDelete(id)
+		res.status(200).json({ message: 'User deleted successfully!' })
+	} catch (err) { res.status(500).json(err) }
 }
 
 export const follow = async (req, res) => {

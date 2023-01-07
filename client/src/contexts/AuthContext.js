@@ -101,14 +101,14 @@ export default function AuthContextProvider({ children }) {
 		} catch (err) { dispatch({ type: 'AUTH_FAIL' }) }
 	}
 
-	const logout = (inputs, navigate, location) => async dispatch => {
+	const logout = (inputs, navigate) => async dispatch => {
 		dispatch({ type: 'LOGOUT_START' })
 
 		try {
 			await Auth.logout(inputs)
 			dispatch({ type: 'LOGOUT_SUCCESS' })
 			socket.current.emit('logout')
-			navigate(location.state?.from ?? '/login', { replace: true })
+			navigate('/login', { replace: true })
 
 			if (toast.isActive('auth')) toast.update('auth', { description: 'Logged out.' })
 			else toast({ id: 'auth', description: 'Logged out.' })
@@ -136,7 +136,7 @@ export default function AuthContextProvider({ children }) {
 		} catch (err) { dispatch({ type: 'UPDATING_FAIL' }) }
 	}
 
-	const remove = (id, inputs) => async dispatch => {
+	const remove = (id, inputs, navigate) => async dispatch => {
 		dispatch({ type: 'UPDATING_START' })
 
 		try {
@@ -145,6 +145,8 @@ export default function AuthContextProvider({ children }) {
 
 			if (toast.isActive('auth')) toast.update('auth', { description: 'Account removed.' })
 			else toast({ id: 'auth', description: 'Account removed.' })
+
+			logout(inputs, navigate)
 		} catch (err) { dispatch({ type: 'UPDATING_FAIL' }) }
 	}
 

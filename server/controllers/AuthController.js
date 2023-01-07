@@ -11,34 +11,33 @@ export const login = async (req, res) => {
 
 	try {
 		const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] }).populate('rooms').populate('following').populate('followers')
-
 		if (!user) return res.status(404).json({ message: 'User not found.' })
 
 		const validity = await bcrypt.compare(password, user.password)
-
 		if (!validity) return res.status(400).json({ message: 'Wrong password.' })
 
 		user.lastSeen = Date.now()
 		user.token = jwt.sign({ username: user.username, id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 		await user.save()
+		delete user.password
 		res.status(200).json(user)
 	} catch (err) { res.status(500).json(err) }
 }
 
 export const register = async (req, res) => {
-	const salt = await bcrypt.genSalt(10)
 	const { username, email, password } = req.body
+	const salt = await bcrypt.genSalt(10)
 	req.body.password = await bcrypt.hash(password, salt)
 
 	try {
 		var user = await User.findOne({ $or: [{ username: username }, { email: email }] })
-
 		if (user) return res.status(400).json({ message: 'User already exists.' })
 
 		user = new User(req.body)
 		user.lastSeen = Date.now()
 		user.token = jwt.sign({ username: user.username, id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 		await user.save()
+		delete user.password
 		res.status(200).json(user)
 	} catch (err) { res.status(500).json(err) }
 }

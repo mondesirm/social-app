@@ -20,6 +20,7 @@ app.use(cors())
 // Serve images inside public folder
 app.use(express.static('public'))
 app.use('/images', express.static('images'))
+app.use('/scripts', express.static('scripts'))
 
 // dotenv.config()
 

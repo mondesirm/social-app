@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { FaCheck, FaTimes, FaTrash } from 'react-icons/fa'
-import { Avatar, AvatarBadge, AvatarGroup, Button, ButtonGroup, Container, Editable, EditableInput, EditablePreview, Flex, FormControl, FormLabel, Heading, HStack, IconButton, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, /* Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverFooter, PopoverHeader, PopoverTrigger, */ Text, Tooltip, useColorModeValue, useDisclosure, useEditableControls } from '@chakra-ui/react'
+import { Avatar, AvatarBadge, AvatarGroup, Button, ButtonGroup, Container, Editable, EditableInput, EditablePreview, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, HStack, IconButton, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, /* Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverFooter, PopoverHeader, PopoverTrigger, */ Text, Tooltip, useColorModeValue, useDisclosure, useEditableControls } from '@chakra-ui/react'
 
 import useMounted from '../hooks/useMounted'
 import { Layout } from '../components/Layout'
@@ -21,6 +21,8 @@ export default function Home() {
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const { isOpen, onOpen, onClose, onToggle } = useDisclosure()
 
+	useEffect(() => setInputs(currentUser), [currentUser])
+
 	const format = date => {
 		date = new Date(Date.now() - new Date(date).getTime())
 		if (date.getTime() < 60000) return `${date.getMinutes()} min ago`
@@ -29,17 +31,17 @@ export default function Home() {
 	}
 
 	const EditableControls = ({ target }) => {
-		const { isEditing, getSubmitButtonProps, getCancelButtonProps } = useEditableControls()
+		const { isEditing, /* getSubmitButtonProps, getCancelButtonProps */ } = useEditableControls()
 
 		return (<>
-			{target === 'avatar' && (<Input hidden={!isEditing} py={2} px={4} ref={avatarRef} name='avatar' type='url' autoFocus onBlur={handleFormSubmit} />)}
+			{target === 'avatar' && (<Input hidden={!isEditing} py={2} px={4} ref={avatarRef} name='avatar' type='url' autoFocus onBlur={handleSubmit} onChange={handleChange} />)}
 
-			{isEditing && (
+			{/* {isEditing && (
 				<ButtonGroup pos='absolute' top='4em' m='1em 0 !important' size='sm'>
 					<IconButton icon={<FaTimes />} {...getCancelButtonProps()} />
 					<IconButton type='submit' icon={<FaCheck />} {...getSubmitButtonProps()} />
 				</ButtonGroup>
-			)}
+			)} */}
 		</>)
 	}
 
@@ -53,7 +55,12 @@ export default function Home() {
 		/>)
 	}
 
-	const handleFormSubmit = async e => {
+	const handleChange = ({ target: { name, value } }) => {
+		setInputs(values => ({ ...values, [name]: value }))
+		console.log(inputs)
+	}
+
+	const handleSubmit = async e => {
 		const { name, value } = e.target ?? e
 
 		setIsSubmitting(true)
@@ -63,30 +70,25 @@ export default function Home() {
 			return
 		}
 
-		setInputs(values => ({ ...values, [name]: value }))
-
 		switch (name) {
 			case 'email':
 			case 'password':
-				if (!isDeleting) {
-					dispatch(update(currentUser._id, inputs, true))
+				if (isDeleting) {
+					dispatch(remove(currentUser._id, inputs, navigate))
 				} else {
-					dispatch(remove(currentUser._id, inputs))
+					dispatch(update(currentUser._id, inputs))
 				}
 
 				onClose()
 				mounted.current && setIsDeleting(false)
 				break
 			default:
-				console.log(name, 'is', value)
 				dispatch(update(currentUser._id, inputs))
 				break
 		}
 
 		mounted.current && setIsSubmitting(false)
 	}
-
-	useEffect(() => setInputs(currentUser), [currentUser])
 
 	return (
 		<Layout>
@@ -114,12 +116,12 @@ export default function Home() {
 						<FormLabel>First Name</FormLabel>
 
 						<Editable defaultValue={inputs.firstName}>
-							<Tooltip label='Click to edit first Name'>
+							<Tooltip label='Click to edit first name'>
 								<EditablePreview py={2} px={4} _hover={{ background: useColorModeValue('gray.100', 'gray.700') }} border='1px solid' borderColor='whiteAlpha.100' borderRadius='md' />
 							</Tooltip>
 
 							<HStack justifyContent='space-between'>
-								<Input py={2} px={4} as={EditableInput} name='firstName' type='text' autoComplete='firstName' autoFocus value={inputs.firstName} required onBlur={handleFormSubmit} />
+								<Input py={2} px={4} as={EditableInput} name='firstName' type='text' autoComplete='firstName' autoFocus value={inputs.firstName} required onBlur={handleSubmit} onChange={handleChange} />
 								<EditableControls target='firstName' />
 							</HStack>
 						</Editable>
@@ -134,7 +136,7 @@ export default function Home() {
 							</Tooltip>
 
 							<HStack justifyContent='space-between'>
-								<Input py={2} px={4} as={EditableInput} name='lastName' type='text' autoComplete='lastName' autoFocus value={inputs.lastName} required onBlur={handleFormSubmit} />
+								<Input py={2} px={4} as={EditableInput} name='lastName' type='text' autoComplete='lastName' autoFocus value={inputs.lastName} required onBlur={handleSubmit} onChange={handleChange} />
 								<EditableControls target='lastName' />
 							</HStack>
 						</Editable>
@@ -149,7 +151,7 @@ export default function Home() {
 							</Tooltip>
 
 							<HStack justifyContent='space-between'>
-								<Input py={2} px={4} as={EditableInput} name='username' type='text' autoComplete='username' autoFocus value={inputs.username} required onBlur={handleFormSubmit} />
+								<Input py={2} px={4} as={EditableInput} name='username' type='text' autoComplete='username' autoFocus value={inputs.username} required onBlur={handleSubmit} onChange={handleChange} />
 								<EditableControls target='username' />
 							</HStack>
 						</Editable>
@@ -164,7 +166,7 @@ export default function Home() {
 							</Tooltip>
 
 							<HStack justifyContent='space-between'>
-								<Input py={2} px={4} as={EditableInput} name='email' type='email' autoComplete='email' autoFocus value={inputs.email} required onBlur={(e) => { if (currentUser.email !== e.target.value) { setInputs(values => ({ ...values, email: e.target.value })); onOpen() } }} />
+								<Input py={2} px={4} as={EditableInput} name='email' type='email' autoComplete='email' autoFocus value={inputs.email} required onBlur={(e) => { if (currentUser.email !== e.target.value) { handleChange(e); onOpen() } }} onChange={handleChange} />
 								<EditableControls target='email' />
 							</HStack>
 						</Editable>
@@ -181,7 +183,7 @@ export default function Home() {
 
 					<AvatarGroup size='md' max={2}>
 						{currentUser.following.map(user => (
-							<Avatar key={user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')}>
+							<Avatar key={'following_' + user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')}>
 								<Tooltip label={user.username + (onlineUsers.some(u => u._id === user._id) ? ' is online' : ' was last seen ' + format(user.lastSeen))} placement='top'>
 									<AvatarBadge boxSize='1em' bg={onlineUsers.some(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
 								</Tooltip>
@@ -195,7 +197,7 @@ export default function Home() {
 
 					<AvatarGroup size='md' max={2}>
 						{currentUser.followers.map(user => (
-							<Avatar key={user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')} onClick={onToggle}>
+							<Avatar key={'followers_' + user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')} onClick={onToggle}>
 								<Tooltip label={user.username + (onlineUsers.some(u => u._id === user._id) ? ' is online' : ' was last seen ' + format(user.lastSeen))} placement='top'>
 									<AvatarBadge boxSize='1em' bg={onlineUsers.some(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
 								</Tooltip>
@@ -224,12 +226,12 @@ export default function Home() {
 
 						<FormControl id='password' mt={4}>
 							<FormLabel>Password</FormLabel>
-							<Input ref={initialRef} name='password' type='password' autoComplete='password' required />
+							<Input ref={initialRef} name='password' type='password' autoComplete='password' required onSubmit={handleSubmit} onChange={handleChange} />
 						</FormControl>
 					</ModalBody>
 
 					<ModalFooter>
-						<Button colorScheme='blue' mr={3} onClick={(e) => handleFormSubmit(initialRef.current)} isLoading={isSubmitting}>Confirm</Button>
+						<Button colorScheme='blue' mr={3} onClick={(e) => handleSubmit(initialRef.current)} isLoading={isSubmitting}>Confirm</Button>
 						<Button onClick={onClose}>Cancel</Button>
 					</ModalFooter>
 				</ModalContent>

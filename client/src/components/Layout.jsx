@@ -1,8 +1,9 @@
 import React from 'react'
 import { Box, Container } from '@chakra-ui/react'
 
-import Navbar from '../components/Navbar'
 import Footer from './Footer'
+import Navbar from '../components/Navbar'
+import StickyTop from './StickyTop'
 
 export function Layout({ noFooter, children }) {
 	return (
@@ -10,6 +11,7 @@ export function Layout({ noFooter, children }) {
 			<Navbar />
 			<Container maxW='container.xl'>{children}</Container>
 			{!noFooter && <Footer />}
+			{!noFooter && <StickyTop />}
 		</Box>
 	)
 }

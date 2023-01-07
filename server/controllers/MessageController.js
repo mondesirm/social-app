@@ -22,7 +22,7 @@ export const create = async (req, res) => {
 
 export const of = async (req, res) => {
 	try {
-		const messages = await Message.find({ chat: req.params.id }).populate('chat').populate('sender', '-password -token -__v')
+		const messages = await Message.find({ chat: req.params.id }).populate('chat').populate('sender', '-password')
 		res.status(200).json(messages)
 	} catch (err) { res.status(500).json(err) }
 }

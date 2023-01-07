@@ -17,9 +17,11 @@ export default function Explore() {
 	const location = useLocation()
 	const navigate = useNavigate()
 	const [rooms, setRooms] = useState([])
+	const [search, setSearch] = useState('')
 	const [selectedTab, setSelectedTab] = useState(-1)
 	const { onCopy, setValue, hasCopied } = useClipboard('') // used to copy room id
 	const [screenIsSmall] = useMediaQuery('(min-width: 22em)') // used to collapse the top card
+	const [screenIsLarge] = useMediaQuery('(min-width: 48em)') // used to collapse the top card
 
 	const icons = {
 		Main: { bg: 'pink.500', icon: <FaHome /> },
@@ -36,21 +38,11 @@ export default function Explore() {
 
 	useEffect(() => {
 		const fetchRooms = async () => {
-			// dispatch(all('Room'))
 			const { data } = await RoomAPI.all()
 			setRooms(data)
 		}
 		fetchRooms()
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentUser])
-
-	/* useEffect(() => {
-		const fetchRooms = async () => {
-			const { data } = await Room.all()
-			setRooms(data)
-		}
-		fetchRooms()
-	}, [currentUser]) */
 
 	const RoomCard = ({ room, icon, ...rest }) => (
 		<Card maxW='md' _hover={{ shadow: 'dark-lg', '& button': { opacity: 100 } }} {...rest}>
@@ -153,7 +145,7 @@ export default function Explore() {
 		if (navigator.share) {
 			navigator.share({ title: room.name, text: room.description, url: '/room/' + room._id })
 				.then(() => toast({ title: 'Room shared.' }))
-				.catch(err => console.err('Error sharing', err))
+				.catch(err => console.err('Error sharing.'))
 		}
 	}
 
@@ -174,15 +166,15 @@ export default function Explore() {
 
 						<InputGroup>
 							<InputLeftElement pointerEvents='none' children={<SearchIcon color='gray.300' />} />
-							<Input type='text' placeholder='Search' autoFocus />
+							<Input type='text' placeholder='Search' autoFocus value={search} onChange={e => setSearch(e.target.value)} />
 						</InputGroup>
 					</CardBody>
 				</Card>
 			</Skeleton>
 
-			<Tabs isFitted isLazy variant='soft-rounded' colorScheme='green'>
-				<Skeleton isLoaded={rooms?.length > 0}>
-					<TabList overflowX='auto'>
+			<Tabs isFitted isLazy variant='soft-rounded' colorScheme='green' orientation={screenIsLarge ? 'horizontal' : 'vertical'}>
+				<Skeleton isLoaded={rooms?.length > 0} position='sticky' top={0} zIndex={1}>
+					<TabList overflowX='auto' bg='chakra-body-bg' p={2} mb={4} boxShadow={screenIsLarge ? 'dark-lg' : 'none'}>
 						<Tab onClick={() => setSelectedTab(-1)}>All</Tab>
 
 						{Array.from(new Set(rooms?.map(r => r.brand)))?.map(b => (
@@ -196,6 +188,12 @@ export default function Explore() {
 				<TabPanels>
 					<Grid mt={4} gap={4} templateColumns={['repeat(1, 1fr)', 'repeat(2, 1fr)', 'repeat(3, 1fr)', 'repeat(4, 1fr)']}>
 						{rooms?.map(room =>
+							// If search is empty, show all rooms else show only rooms with the search in the name
+							(!search ||
+								room.name.toLowerCase().includes(search.toLowerCase()) ||
+								room.description.toLowerCase().includes(search.toLowerCase()) ||
+								room.brand?.name.toLowerCase().includes(search.toLowerCase())
+							) &&
 							// If room is private, only show to admins
 							(!room?.isPrivate || currentUser?.roles?.includes('admin'))
 							// If selectedTab is -1, show all rooms else show only rooms with the selected brand

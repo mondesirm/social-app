@@ -10,7 +10,7 @@ export default function authReducer(state = initialState, action) {
 		case 'AUTH_FAIL': return { ...state, isAuthenticating: false, isFailing: true }
 
 		case 'LOGOUT_START': return { ...state, isLoggingOut: true, isFailing: false }
-		case 'LOGOUT_SUCCESS': localStorage.clear(); return initialState
+		case 'LOGOUT_SUCCESS': localStorage.removeItem('store'); return initialState
 		case 'LOGOUT_FAIL': return { ...state, isLoggingOut: false, isFailing: true }
 
 		case 'UPDATING_START': return { ...state, isUpdating: true, isFailing: false }

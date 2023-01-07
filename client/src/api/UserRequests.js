@@ -15,8 +15,8 @@ API.interceptors.request.use(req => {
 
 export const all = () => API.get('/user')
 export const one = id => API.get(`/user/${id}`)
-export const update = (id, formData) => API.put(`/user/${id}`, formData)
-export const remove = (id, formData) => API.delete(`/user/${id}`, formData)
+export const update = (id, data) => API.put(`/user/${id}`, data)
+export const remove = (id, data) => API.delete(`/user/${id}`, data)
 export const friends = userId => API.get(`/user/${userId}/friends`)
 export const follow = (id, user) => API.put(`/user/${id}/follow`, user)
 export const unfollow = (id, user) => API.put(`/user/${id}/unfollow`, user)

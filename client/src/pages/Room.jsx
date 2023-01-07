@@ -1,38 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { useDispatch } from 'react-redux'
-import { FaCommentAlt, FaCopy, FaEllipsisV, FaEnvelope, FaEnvelopeOpen, FaTimes, FaUserMinus, FaUserPlus } from 'react-icons/fa'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { FaCommentAlt, FaCopy, FaEllipsisV, FaHome, FaMotorcycle, FaQuestion, FaRecycle, FaSearch, FaTimes, FaUserMinus, FaUserPlus, FaUsers } from 'react-icons/fa'
 import { Avatar, AvatarBadge, Box, Button, Card, CardBody, CardHeader, Center, Flex, Heading, HStack, IconButton, List, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Skeleton, Slide, Tab, TabList, TabPanel, TabPanels, Tabs, Tag, Text, Tooltip, useClipboard, useColorModeValue, useDisclosure, useMediaQuery, VStack } from '@chakra-ui/react'
 
 import './Chat.css'
 import { Layout } from '../components/Layout'
-import * as ChatAPI from '../api/ChatRequests'
-import * as UserAPI from '../api/UserRequests'
+import * as RoomAPI from '../api/RoomRequests'
 import Separator from '../components/Separator'
 import { useAuth } from '../contexts/AuthContext'
-import ChatBox from '../components/ChatBox/ChatBox'
-// import Conversation from '../components/Conversation/Conversation'
-import { useDatabase } from '../contexts/DatabaseContext'
-import { useParams } from 'react-router-dom'
-// import ProfileSide from '../../components/ProfileSide/ProfileSide'
+import RoomBox from '../components/RoomBox/RoomBox'
 
-export default function Chat() {
-	const { currentUser, onlineUsers, follow, unfollow, toast } = useAuth()
-	const { create } = useDatabase()
+export default function Room() {
+	const { currentUser, onlineUsers, follow, unfollow, join, leave, toast } = useAuth()
 	const { id } = useParams()
 	const dispatch = useDispatch()
-	const [sent, setSent] = useState([])
-	const [chats, setChats] = useState([])
-	const [mutuals, setMutuals] = useState([])
-	const [received, setReceived] = useState([])
+	const navigate = useNavigate()
+	const location = useLocation()
+	const [rooms, setRooms] = useState([])
 	const socket = useRef(io('ws://localhost:9000'))
-	const [recommended, setRecommended] = useState([])
-	const [currentChat, setCurrentChat] = useState(null)
+	const [currentRoom, setCurrentRoom] = useState(null)
 	const [sendMessage, setSendMessage] = useState(null)
 	const { onCopy, setValue, hasCopied } = useClipboard('')
 	const [screenIsSmall] = useMediaQuery('(max-width: 690px)')
 	const [receivedMessage, setReceivedMessage] = useState(null)
 	const onlineSelf = onlineUsers.find(u => u._id === currentUser._id)
+
+	const icons = {
+		Main: { bg: 'pink.500', icon: <FaHome /> },
+		Help: { bg: 'blue.500', icon: <FaQuestion /> },
+		Misc: { bg: 'green.500', icon: <FaRecycle /> }
+	}
 
 	useEffect(() => {
 		if (hasCopied) {
@@ -42,38 +41,20 @@ export default function Chat() {
 	}, [hasCopied, toast])
 
 	useEffect(() => {
-		// Get current user's chats
-		const fetchChats = async () => {
-			// dispatch(of('Chat', currentUser._id))
-			const { data } = await ChatAPI.of(currentUser._id)
-			setChats(data)
+		// Get current user's rooms
+		const fetchRooms = async () => {
+			// get params from url
+			const { data } = await RoomAPI.of(currentUser._id)
+			setRooms(data)
 
-			if (id) setCurrentChat(data.find(c => c._id === id))
-			else setCurrentChat(null)
+			if (id) setCurrentRoom(data.find(r => r._id === id))
+			else setCurrentRoom(null)
 		}
 
-		// Get list of other users
-		const fetchUsers = async () => {
-			const { data } = await UserAPI.all()
-			const current = data.find(u => u._id === currentUser._id)
-
-			const mutuals = data.filter(u => current.following.includes(u._id) && current.followers.includes(u._id))
-			const sentOnly = data.filter(u => current.following.includes(u._id) && !current.followers.includes(u._id))
-			const receivedOnly = data.filter(u => current.followers.includes(u._id) && !current.following.includes(u._id))
-			const neitherOfThem = data.filter(u => !current.following.includes(u._id) && !current.followers.includes(u._id) && current._id !== u._id)
-			// const mutualsWithoutChats = mutuals.filter(u => !chats.find(c => c.members.find(m => m._id === u._id)))
-
-			setSent(sentOnly)
-			setReceived(receivedOnly)
-			setRecommended(neitherOfThem)
-			setMutuals(mutuals)
-		}
-
-		fetchChats()
-		fetchUsers()
+		fetchRooms()
 
 		// if (onlineSelf?.shouldUpdate) io.emit('updated', currentUser?._id)
-	}, [currentUser, currentChat?._id, onlineSelf, id])
+	}, [currentUser, currentRoom?._id, onlineSelf, id])
 
 	// Send message to socket server
 	useEffect(() => {
@@ -97,11 +78,11 @@ export default function Chat() {
 		return date.getDate() - 1 < 1 ? 'yesterday' : `${date.getDate() - 1}d+ ago`
 	}
 
-	const checkOnlineStatus = chat => {
-		const member = chat.members.find(m => m._id !== currentUser._id)
-		const online = onlineUsers.find(u => u._id === member._id)
-		return online ? true : false
-	}
+	// const checkOnlineStatus = chat => {
+	// 	const member = chat.members.find(m => m._id !== currentUser._id)
+	// 	const online = onlineUsers.find(u => u._id === member._id)
+	// 	return online ? true : false
+	// }
 
 	const handleFollow = async user => {
 		if (currentUser?.following?.map(other => other._id).includes(user._id)) return
@@ -113,13 +94,19 @@ export default function Chat() {
 		dispatch(unfollow(user))
 	}
 
-	const handleMessage = async user => {
-		if (!user.following.includes(currentUser._id) && !user.followers.includes(currentUser._id)) return
-		dispatch(create('Chat', { self: currentUser._id, other: user._id }))
-		setCurrentChat(null)
+	const handleJoin = async room => {
+		if (room?.members?.map(member => member._id).includes(currentUser._id)) return
+		dispatch(join(room, navigate))
 	}
 
-	const handleToast = () => toast({ description: 'You must be mutuals with this user to message them.', status: 'info' })
+	const handleLeave = async room => {
+		if (!room?.members?.map(member => member._id).includes(currentUser._id)) return
+		dispatch(leave(room, navigate, location))
+	}
+
+	const handleMessage = ({ _id }) => navigate(`/chat/${_id}`)
+
+	// const handleToast = () => toast({ description: 'You must be mutuals with this user to message them.', status: 'info' })
 
 	const UserItem = ({ user, noChat, online, onClick, ...rest }) => (
 		<Card variant='outline' maxW='md' _hover={{ background: useColorModeValue('gray.100', 'gray.500'), '& button': { opacity: 100 } }} cursor='pointer' {...rest}>
@@ -176,15 +163,70 @@ export default function Chat() {
 		</Card>
 	)
 
-	const MessageRequests = ({ received, sent }) => {
+	const RoomItem = ({ icon, room, onClick, ...rest }) => (
+		<Card variant='outline' maxW='md' _hover={{ background: useColorModeValue('gray.100', 'gray.500'), '& button': { opacity: 100 } }} cursor='pointer' {...rest}>
+			<CardHeader>
+				<Flex spacing='4'>
+					<Flex flex='1' gap='4' alignItems='center' flexWrap='wrap' onClick={onClick}>
+						{room?.brand
+							? <Avatar
+								src={'/images/logos/' + (room?.brand?.logo || 'default.png')}
+								sx={{ '& img': { objectFit: 'contain' } }}
+							/>
+							: <Avatar bg={icon?.bg} icon={icon?.icon || <FaMotorcycle />} />
+						}
+
+						<Box>
+							<Heading size='sm'>{room.name}</Heading>
+							{room?.brand && <Text fontSize='xs' color='gray.500'>{room.brand.name}</Text>}
+						</Box>
+					</Flex>
+
+					<Menu>
+						{({ isOpen }) => (<>
+							<MenuButton
+								as={IconButton}
+								variant='outline'
+								bg='gray.600'
+								shadow='dark-lg'
+								aria-label='Options'
+								icon={<FaEllipsisV />}
+								opacity={0}
+								_active={{ opacity: 100 }}
+								transform={isOpen ? 'rotate(90deg)' : 'rotate(0deg)'}
+							/>
+
+							<MenuList>
+								<MenuItem icon={<FaCommentAlt />} onClick={onClick}>Message</MenuItem>
+
+								
+								{room?.members?.map(m => m._id).includes(currentUser?._id)
+									? <MenuItem icon={<FaUserMinus />} onClick={() => { handleLeave(room) }}>Leave</MenuItem>
+									: <MenuItem icon={<FaUserPlus />} onClick={() => { handleJoin(room) }}>Join</MenuItem>
+								}
+
+								<MenuDivider />
+
+								<MenuItem icon={<FaCopy />} onClick={() => { setValue(room._id); onCopy() }}>
+									Copy ID
+								</MenuItem>
+							</MenuList>
+						</>)}
+					</Menu>
+				</Flex>
+			</CardHeader>
+		</Card>
+	)
+
+	const MembersList = ({ online, offline }) => {
 		const { isOpen, onToggle } = useDisclosure()
 
 		return (
 			<Flex spacing='4' maxW='md'>
-				<Button leftIcon={isOpen ? <FaEnvelopeOpen /> : <FaEnvelope />} variant='solid' onClick={onToggle} gap={4}>
-					<Text>Message Requests</Text>
-					<Tag variant='solid' colorScheme={received.length > 0 && 'red'}>{received.length}</Tag>
-					<Tag variant='solid' colorScheme={false}>{sent.length}</Tag>
+				<Button leftIcon={<FaUsers />} variant='solid' onClick={onToggle} gap={4}>
+					<Text>Members</Text>
+					<Tag variant='solid' colorScheme={online.length > 0 && 'green'}>{online.length}</Tag>
+					<Tag variant='solid' colorScheme={false}>{offline.length}</Tag>
 				</Button>
 
 				<Slide direction='bottom' in={isOpen} style={{ zIndex: 10 }}>
@@ -192,7 +234,7 @@ export default function Chat() {
 						<CardHeader>
 							<Flex justify='space-between' align='center'>
 								<Button leftIcon={<FaTimes />} variant='solid' onClick={onToggle}>Close</Button>
-								<Heading size='sm'>Message Requests</Heading>
+								<Heading size='sm'>Members</Heading>
 							</Flex>
 						</CardHeader>
 
@@ -200,30 +242,30 @@ export default function Chat() {
 							<Tabs isFitted isLazy variant='soft-rounded' colorScheme='green'>
 								<TabList overflowX='auto'>
 									<Tab gap={4}>
-										<Text>Received</Text>
-										<Tag variant='solid' colorScheme={received.length > 0 && 'red'}>{received.length}</Tag>
+										<Text>Online</Text>
+										<Tag variant='solid' colorScheme={online.length > 0 && 'green'}>{online.length}</Tag>
 									</Tab>
 
 									<Tab gap={4}>
-										<Text>Sent</Text>
-										<Tag variant='solid' colorScheme={false}>{sent.length}</Tag>
+										<Text>Offline</Text>
+										<Tag variant='solid' colorScheme={false}>{offline.length}</Tag>
 									</Tab>
 								</TabList>
 
 								<TabPanels>
-									{[received, sent].map((requests, i) => (
+									{[online, offline].map((users, i) => (
 										<TabPanel key={i}>
 											<List>
-												{requests.map(user => (
-													<Skeleton key={user._id} isLoaded={requests?.length > 0}>
+												{users.map(user => (
+													<Skeleton key={user._id} isLoaded={users?.length > 0}>
 														<UserItem user={user} />
 													</Skeleton>
 												))}
 
-												{requests.length < 1 && (
+												{users.length < 1 && (
 													<Center>
 														<Text fontSize='xl' fontStyle='italic' color='gray.500'>
-															There are no pending message requests.
+															There are no members in this room.
 														</Text>
 													</Center>
 												)}
@@ -243,44 +285,35 @@ export default function Chat() {
 		<Layout noFooter>
 			<HStack spacing={4} align='stretch' h='calc(100vh - 6.125rem)'>
 				<VStack hidden={screenIsSmall} spacing={4} align='stretch' shadow='dark-lg' p={4} rounded='md' bg='gray.700'>
-					<MessageRequests received={received} sent={sent} />
+					{/* {currentRoom && <MembersList online={onlineUsers} offline={currentRoom?.members} />} */}
 
 					<List spacing={3}>
-						{/* <div key={chat._id} onClick={() => setCurrentChat(chat)}>
-							<Conversation chat={chat} online={checkOnlineStatus(chat)} />
-						</div> */}
-
-						{chats.map(c =>
-							<UserItem
-								key={c._id}
-								user={c.members.find(m => m._id !== currentUser?._id)}
-								onClick={() => setCurrentChat(c)}
-								online={checkOnlineStatus(c)}
-								bg={currentChat?._id === c._id && 'gray.600'}
+						{rooms.map(r =>
+							<RoomItem
+								key={r._id}
+								icon={icons[r.name] || null}
+								room={r}
+								onClick={() => setCurrentRoom(r)}
+								bg={currentRoom?._id === r._id && 'gray.600'}
 							/>
 						)}
 
-						{chats.length === 0 && (
+						{rooms.length === 0 && (
 							<Center>
 								<Text fontSize='xl' fontWeight='bold' color='gray.500'>
-									No chats yet
+									No rooms yet
 								</Text>
 							</Center>
 						)}
 
-						<Skeleton isLoaded={mutuals?.length > 0} hidden={mutuals?.length < 1}>
-							<Separator my={6}>Start a conversation</Separator>
-							{mutuals.map(user => <UserItem key={user._id} user={user} noChat />)}
-						</Skeleton>
-
-						<Skeleton isLoaded={recommended?.length > 0} hidden={recommended?.length < 1}>
-							<Separator my={6}>Find new friends</Separator>
-							{recommended.map(user => <UserItem key={user._id} user={user} onClick={() => handleToast()} />)}
-						</Skeleton>
+						{/* Find other rooms */}
+						<Button leftIcon={<FaSearch />} colorScheme='blue' variant='solid' onClick={() => navigate('/explore')}>
+							Find other rooms
+						</Button>
 					</List>
 				</VStack>
 
-				<ChatBox chat={currentChat} setCurrentChat={setCurrentChat} setSendMessage={setSendMessage} receivedMessage={receivedMessage} user={currentChat?.members?.find(m => m._id !== currentUser._id)} />
+				<RoomBox icon={icons[currentRoom?.name] || null} room={currentRoom} setCurrentRoom={setCurrentRoom} setSendMessage={setSendMessage} receivedMessage={receivedMessage} users={currentRoom?.members?.filter(m => m._id !== currentUser?._id)} />
 				{/* <VStack spacing={4} justify='center' align='stretch' shadow='dark-lg' p={4} rounded='md' bg='gray.700'>
 				</VStack> */}
 			</HStack>

@@ -26,5 +26,6 @@ const schema = mongoose.Schema(
 )
 
 schema.virtual('fullName').get(() => { return this.firstName + ' ' + this.lastName })
+schema.virtual('isStaff').get(() => { return this.roles.includes('staff') })
 
 export default mongoose.model('User', schema)
