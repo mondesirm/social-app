@@ -33,20 +33,19 @@ export const useAuth = () => useContext(AuthContext)
 
 export default function AuthContextProvider({ children }) {
 	const { currentUser, isAuthenticating, isUpdating, isJoining, isLeaving, isFailing } = useSelector(state => state.authReducer)
-	const socket = useRef(io('ws://localhost:9000'))
+	const socket = useRef(null)
+	// TODO redundancy: remove isOnline from User model
 	const [onlineUsers, setOnlineUsers] = useState([])
 	const toast = useToast({ isClosable: true, status: 'success', duration: 2000 })
-
-	useEffect(() => {
-		if (currentUser) {
-			// TODO socket.current = io(process.env.SOCKET_HOST.slice(0, -1))
-			socket.current.emit('add-user', currentUser._id)
-			// TODO redundancy: remove isOnline from User model
-		}
-
-		socket.current.on('get-users', users => setOnlineUsers(users))
-	}, [currentUser])
 	
+	useEffect(() => {
+		if (currentUser?._id && currentUser?._id !== null) {
+			socket.current = io(process.env.REACT_APP_SOCKET_HOST)
+			socket.current.emit('add-user', currentUser?._id)
+			socket.current.on('get-users', users => setOnlineUsers(users))
+		}
+	}, [currentUser?._id])
+
 	// Toasts
 	useEffect(() => {
 		if (isAuthenticating) {
@@ -80,8 +79,15 @@ export default function AuthContextProvider({ children }) {
 
 		try {
 			const { data } = await Auth.login(inputs)
-			dispatch({ type: 'AUTH_SUCCESS', data })
-			navigate(location.state?.from ?? '/', { replace: true })
+			// TODO prevent login if user is already online
+			if (onlineUsers.find(u => u._id === data._id)) {
+				dispatch({ type: 'AUTH_FAIL' })
+				if (toast.isActive('auth')) toast.update('auth', { description: 'Already logged in somewhere else.', status: 'warning' })
+				else toast({ description: 'Already logged in somewhere else.', status: 'warning' })
+			} else {
+				dispatch({ type: 'AUTH_SUCCESS', data })
+				navigate(location.state?.from ?? '/', { replace: true })
+			}
 
 			if (toast.isActive('auth')) toast.update('auth', { description: `Logged in as @${data.username}.` })
 			else toast({ id: 'auth', description: `Logged in as @${data.username}.` })

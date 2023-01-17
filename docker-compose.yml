@@ -48,6 +48,7 @@ services:
     container_name: social-app-client
     depends_on:
       - server
+      - socket
     volumes:
       - ./client:/usr/local/client
       - /usr/local/client/node_modules

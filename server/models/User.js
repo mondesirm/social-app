@@ -9,7 +9,6 @@ const schema = mongoose.Schema(
 		password: String,
 		firstName: String,
 		lastName: String,
-		isOnline: { type: Boolean, default: false },
 		lastSeen: { type: Date, default: Date.now() },
 		token: { type: String, default: ''},
 		roles: { type: Array, default: ['user'] },

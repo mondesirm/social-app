@@ -33,20 +33,15 @@ export const useDatabase = () => useContext(DatabaseContext)
 export default function DatabaseContextProvider({ children }) {
 	const { onlineUsers } = useSelector(state => state.authReducer)
 	const { db, isFetching, isCreating, isUpdating, isDeleting, isUploading, isFailing } = useSelector(state => state.databaseReducer)
-	const socket = useRef(io('ws://localhost:9000'))
-	const toast = useToast({ isClosable: true, status: 'success', duration: 2000 })
+	const socket = useRef(null)
 	const models = { Auth, Chat, User, Room, Upload, Message }
+	const toast = useToast({ isClosable: true, status: 'success', duration: 2000 })
 
 	// TODO differentiate same name keys from different contexts
 	useEffect(() => {
 		if (isFetching) {
 			if (toast.isActive('database')) toast.update('database', { description: 'Fetching...', status: 'info' })
 			else toast({ id: 'database', description: 'Fetching...', status: 'info' })
-		}
-
-		if (isCreating) {
-			if (toast.isActive('database')) toast.update('database', { description: 'Creating...', status: 'info' })
-			else toast({ id: 'database', description: 'Creating...', status: 'info' })
 		}
 
 		if (isUpdating) {
@@ -72,7 +67,7 @@ export default function DatabaseContextProvider({ children }) {
 
 	const all = model => async dispatch => {
 		dispatch({ type: 'FETCHING_START' })
-		
+
 		try {
 			const { data } = await models[model].all()
 			dispatch({ type: 'FETCHING_SUCCESS', data, model })
@@ -100,16 +95,34 @@ export default function DatabaseContextProvider({ children }) {
 	const create = (model, formData) => async dispatch => {
 		dispatch({ type: 'CREATING_START' })
 
+		if (model !== 'Message') {
+			if (toast.isActive('database')) toast.update('database', { description: 'Creating...', status: 'info' })
+			else toast({ id: 'database', description: 'Creating...', status: 'info' })
+		}
+
 		try {
 			const { data } = await models[model].create(formData)
 			dispatch({ type: 'CREATING_SUCCESS', data, model })
 
-			socket.current.emit('add-user', formData.self, true)
-			if (onlineUsers.some(u => u._id === formData.other)) socket.current.emit('add-user', formData.other, true)
+			if (['Chat', 'Message'].includes(model)) {
+				socket.current = io(process.env.REACT_APP_SOCKET_HOST)
 
-			if (toast.isActive('database')) toast.update('database', { description: model + ' created.' })
-			else toast({ id: 'database', description: model + ' created.' })
-		} catch (err) { dispatch({ type: 'CREATING_FAIL' }) }
+				if (model === 'Chat') {
+					socket.current.emit('add-user', formData.self, true)
+					if (onlineUsers?.find(u => u._id === formData.other)) socket.current.emit('add-user', formData.other, true)
+				}
+
+				if (model === 'Message') {
+					socket.current.emit('add-user', formData.sender.id, true)
+					if (onlineUsers?.find(u => u._id === formData.receiver)) socket.current.emit('add-user', formData.receiver, true)
+				}
+			}
+
+			if (model !== 'Message') {
+				if (toast.isActive('database')) toast.update('database', { description: model + ' created.' })
+				else toast({ id: 'database', description: model + ' created.' })
+			}
+		} catch (err) { console.log(err.message); dispatch({ type: 'CREATING_FAIL' }) }
 	}
 
 	const update = (model, id, formData) => async dispatch => {

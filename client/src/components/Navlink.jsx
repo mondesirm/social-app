@@ -4,7 +4,7 @@ import { NavLink as Link, useLocation } from 'react-router-dom'
 
 export default function Navlink({ to, name, icon, variant = 'ghost', colorScheme = 'blue', ...rest }) {
 	const { pathname } = useLocation()
-	const isActive = pathname === to
+	const isActive = pathname.startsWith(to)
 
 	return (
 		<Link to={to}>

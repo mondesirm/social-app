@@ -6,16 +6,13 @@ export const create = async (req, res) => {
 		const other = await User.findById(req.body.other)
 
 		if (!self || !other) return res.status(404).json({ message: 'User not found.' })
-
-		if (!other.following.includes(self._id) && !other.followers.includes(self._id))
-			return res.status(403).json({ message: 'You are not mutuals with this user.' })
+		if (!other.following.includes(self._id) && !other.followers.includes(self._id)) return res.status(403).json({ message: 'You are not mutuals with this user.' })
 
 		// const chat = await Chat.findOne({ members: { $all: [self, other] } })
 		const chat = self.chats.find(c => c.members.includes(other._id))
-
 		if (chat) return res.status(200).json(self)
 
-		const newChat = new Chat({ members: [self, other] })
+		const newChat = new Chat({ members: [self._id, other._id] })
 		self.chats.push(newChat)
 		other.chats.push(newChat)
 
@@ -26,11 +23,8 @@ export const create = async (req, res) => {
 		await self.save()
 		await other.save()
 
-		res.status(200).json(newChat)
-	} catch (err) {
-		console.log(err)
-		res.status(500).json(err)
-	}
+		res.status(200).json(self.chats)
+	} catch (err) { res.status(500).json(err) }
 }
 
 export const one = async (req, res) => {

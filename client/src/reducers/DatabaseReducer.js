@@ -13,10 +13,7 @@ export default function databaseReducer(state = initialState, action) {
 		case 'CREATING_SUCCESS':
 			return {
 				...state, db: {
-					...state.db, [action.model]: [
-						...state.db[action.model].filter(m => m._id !== action.data._id),
-						action.data
-					]
+					...state.db, [action.model]: action.data
 				}, isCreating: false, isFailing: false
 			}
 		case 'CREATING_FAIL': return { ...state, isCreating: false, isFailing: true }

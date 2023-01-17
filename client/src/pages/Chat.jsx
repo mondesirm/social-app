@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { useDispatch } from 'react-redux'
-import { FaCommentAlt, FaCopy, FaEllipsisV, FaEnvelope, FaEnvelopeOpen, FaTimes, FaUserMinus, FaUserPlus } from 'react-icons/fa'
-import { Avatar, AvatarBadge, Box, Button, Card, CardBody, CardHeader, Center, Flex, Heading, HStack, IconButton, List, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Skeleton, Slide, Tab, TabList, TabPanel, TabPanels, Tabs, Tag, Text, Tooltip, useClipboard, useColorModeValue, useDisclosure, useMediaQuery, VStack } from '@chakra-ui/react'
+import { SearchIcon } from '@chakra-ui/icons'
+import { useNavigate, useParams } from 'react-router-dom'
+import { FaCommentAlt, FaCopy, FaEllipsisV, FaEnvelope, FaEnvelopeOpen, FaGlobe, FaPlus, FaTimes, FaUserMinus, FaUserPlus } from 'react-icons/fa'
+import { Avatar, AvatarBadge, Box, Button, Card, CardBody, CardHeader, Center, Flex, Heading, HStack, IconButton, Input, InputGroup, InputLeftElement, List, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger, Skeleton, Slide, Tab, TabList, TabPanel, TabPanels, Tabs, Tag, Text, Tooltip, useClipboard, useColorModeValue, useDisclosure, useMediaQuery, VStack } from '@chakra-ui/react'
 
 import './Chat.css'
 import { Layout } from '../components/Layout'
@@ -11,9 +13,7 @@ import * as UserAPI from '../api/UserRequests'
 import Separator from '../components/Separator'
 import { useAuth } from '../contexts/AuthContext'
 import ChatBox from '../components/ChatBox/ChatBox'
-// import Conversation from '../components/Conversation/Conversation'
 import { useDatabase } from '../contexts/DatabaseContext'
-import { useParams } from 'react-router-dom'
 // import ProfileSide from '../../components/ProfileSide/ProfileSide'
 
 export default function Chat() {
@@ -21,12 +21,12 @@ export default function Chat() {
 	const { create } = useDatabase()
 	const { id } = useParams()
 	const dispatch = useDispatch()
+	const navigate = useNavigate()
 	const [sent, setSent] = useState([])
 	const [chats, setChats] = useState([])
 	const [mutuals, setMutuals] = useState([])
 	const [received, setReceived] = useState([])
-	const socket = useRef(io('ws://localhost:9000'))
-	const [recommended, setRecommended] = useState([])
+	const socket = useRef(io(process.env.REACT_APP_SOCKET_HOST))
 	const [currentChat, setCurrentChat] = useState(null)
 	const [sendMessage, setSendMessage] = useState(null)
 	const { onCopy, setValue, hasCopied } = useClipboard('')
@@ -60,12 +60,10 @@ export default function Chat() {
 			const mutuals = data.filter(u => current.following.includes(u._id) && current.followers.includes(u._id))
 			const sentOnly = data.filter(u => current.following.includes(u._id) && !current.followers.includes(u._id))
 			const receivedOnly = data.filter(u => current.followers.includes(u._id) && !current.following.includes(u._id))
-			const neitherOfThem = data.filter(u => !current.following.includes(u._id) && !current.followers.includes(u._id) && current._id !== u._id)
 			// const mutualsWithoutChats = mutuals.filter(u => !chats.find(c => c.members.find(m => m._id === u._id)))
 
 			setSent(sentOnly)
 			setReceived(receivedOnly)
-			setRecommended(neitherOfThem)
 			setMutuals(mutuals)
 		}
 
@@ -97,19 +95,13 @@ export default function Chat() {
 		return date.getDate() - 1 < 1 ? 'yesterday' : `${date.getDate() - 1}d+ ago`
 	}
 
-	const checkOnlineStatus = chat => {
-		const member = chat.members.find(m => m._id !== currentUser._id)
-		const online = onlineUsers.find(u => u._id === member._id)
-		return online ? true : false
-	}
-
 	const handleFollow = async user => {
-		if (currentUser?.following?.map(other => other._id).includes(user._id)) return
+		if (currentUser?.following?.map(f => f._id).includes(user._id)) return
 		dispatch(follow(user))
 	}
 
 	const handleUnfollow = async user => {
-		if (!currentUser?.following?.map(other => other._id).includes(user._id)) return
+		if (!currentUser?.following?.map(f => f._id).includes(user._id)) return
 		dispatch(unfollow(user))
 	}
 
@@ -119,16 +111,14 @@ export default function Chat() {
 		setCurrentChat(null)
 	}
 
-	const handleToast = () => toast({ description: 'You must be mutuals with this user to message them.', status: 'info' })
-
-	const UserItem = ({ user, noChat, online, onClick, ...rest }) => (
+	const UserItem = ({ user, noChat, onClick, ...rest }) => (
 		<Card variant='outline' maxW='md' _hover={{ background: useColorModeValue('gray.100', 'gray.500'), '& button': { opacity: 100 } }} cursor='pointer' {...rest}>
 			<CardHeader>
 				<Flex spacing='4'>
 					<Flex flex='1' gap='4' alignItems='center' flexWrap='wrap' onClick={noChat ? () => handleMessage(user) : onClick}>
 						<Avatar src={'/images/avatars/' + (user?.avatar || 'default.png')} size='sm'>
-							<Tooltip label={/* user.isOnline || */ online ? 'Online' : 'Last seen ' + format(user.lastSeen)} placement='top'>
-								<AvatarBadge boxSize='1em' bg={/* user.isOnline || */ online ? 'green.500' : 'gray.500'} />
+							<Tooltip label={onlineUsers.find(u => u._id === user._id) ? 'Online' : 'Last seen ' + format(user.lastSeen)} placement='top'>
+								<AvatarBadge boxSize='1em' bg={onlineUsers.find(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
 							</Tooltip>
 						</Avatar>
 
@@ -156,7 +146,7 @@ export default function Chat() {
 							/>
 
 							<MenuList>
-								<MenuItem icon={<FaCommentAlt />} onClick={noChat ? () => handleMessage(user) : onClick}>Message</MenuItem>
+								<MenuItem icon={<FaCommentAlt />} onClick={noChat ? () => handleMessage(user) : onClick}>{noChat ? 'Create Chat' : 'Message'}</MenuItem>
 
 								{currentUser?.following?.map(other => other._id).includes(user._id)
 									? <MenuItem icon={<FaUserMinus />} onClick={() => { handleUnfollow(user) }}>Unfollow</MenuItem>
@@ -176,13 +166,13 @@ export default function Chat() {
 		</Card>
 	)
 
-	const MessageRequests = ({ received, sent }) => {
+	const PendingRequests = ({ received, sent }) => {
 		const { isOpen, onToggle } = useDisclosure()
 
 		return (
 			<Flex spacing='4' maxW='md'>
 				<Button leftIcon={isOpen ? <FaEnvelopeOpen /> : <FaEnvelope />} variant='solid' onClick={onToggle} gap={4}>
-					<Text>Message Requests</Text>
+					<Text>Pending Requests</Text>
 					<Tag variant='solid' colorScheme={received.length > 0 && 'red'}>{received.length}</Tag>
 					<Tag variant='solid' colorScheme={false}>{sent.length}</Tag>
 				</Button>
@@ -192,7 +182,7 @@ export default function Chat() {
 						<CardHeader>
 							<Flex justify='space-between' align='center'>
 								<Button leftIcon={<FaTimes />} variant='solid' onClick={onToggle}>Close</Button>
-								<Heading size='sm'>Message Requests</Heading>
+								<Heading size='sm'>Pending Requests</Heading>
 							</Flex>
 						</CardHeader>
 
@@ -223,7 +213,7 @@ export default function Chat() {
 												{requests.length < 1 && (
 													<Center>
 														<Text fontSize='xl' fontStyle='italic' color='gray.500'>
-															There are no pending message requests.
+															There are no pending requests.
 														</Text>
 													</Center>
 												)}
@@ -239,23 +229,68 @@ export default function Chat() {
 		)
 	}
 
+	const CreateChatPopover = () => {
+		const initRef = useRef()
+		const [search, setSearch] = useState('')
+
+		return (
+			<Popover placement='right' initialFocusRef={initRef}>
+				{({ isOpen, onClose }) => (<>
+					<PopoverTrigger>
+						<IconButton icon={<FaPlus />} variant='solid' />
+					</PopoverTrigger>
+
+					{/* <Portal> */}
+					<PopoverContent>
+						<PopoverHeader>
+							<Heading size='md' mb={4}>Select Mutual</Heading>
+
+							<InputGroup>
+								<InputLeftElement pointerEvents='none' children={<SearchIcon color='gray.300' />} />
+								<Input type='text' placeholder='Type the username of a mutual' autoFocus value={search} onChange={e => setSearch(e.target.value)} />
+							</InputGroup>
+						</PopoverHeader>
+
+						<PopoverBody>
+							<Skeleton isLoaded={mutuals?.length > 0} hidden={mutuals?.length < 1}>
+								{mutuals.map(user =>
+									(!search ||
+										user.username.toLowerCase().includes(search.toLowerCase()) ||
+										(user.firstName + ' ' + user.lastName).toLowerCase().includes(search.toLowerCase())
+									) && <UserItem key={user._id} user={user} noChat />
+								)}
+
+								{(mutuals.length < 1 || mutuals.filter(user =>
+									user.username.toLowerCase().includes(search.toLowerCase()) ||
+									(user.firstName + ' ' + user.lastName).toLowerCase().includes(search.toLowerCase())
+								).length < 1) && (
+									<Center>
+										<Text fontSize='xl' fontWeight='bold' color='gray.500'>No mutuals found.</Text>
+									</Center>
+								)}
+							</Skeleton>
+						</PopoverBody>
+					</PopoverContent>
+					{/* </Portal> */}
+				</>)}
+			</Popover>
+		)
+	}
+
 	return (
 		<Layout noFooter>
 			<HStack spacing={4} align='stretch' h='calc(100vh - 6.125rem)'>
 				<VStack hidden={screenIsSmall} spacing={4} align='stretch' shadow='dark-lg' p={4} rounded='md' bg='gray.700'>
-					<MessageRequests received={received} sent={sent} />
+					<PendingRequests received={received} sent={sent} />
 
-					<List spacing={3}>
-						{/* <div key={chat._id} onClick={() => setCurrentChat(chat)}>
-							<Conversation chat={chat} online={checkOnlineStatus(chat)} />
-						</div> */}
+					<List spacing={3} display='grid' alignItems='stretch'>
+						<Separator mb={3} action={<CreateChatPopover />}>Chats</Separator>
 
 						{chats.map(c =>
 							<UserItem
 								key={c._id}
 								user={c.members.find(m => m._id !== currentUser?._id)}
-								onClick={() => setCurrentChat(c)}
-								online={checkOnlineStatus(c)}
+								onClick={() => { setCurrentChat(c); navigate(`/chat/${c._id}`) }}
 								bg={currentChat?._id === c._id && 'gray.600'}
 							/>
 						)}
@@ -268,15 +303,10 @@ export default function Chat() {
 							</Center>
 						)}
 
-						<Skeleton isLoaded={mutuals?.length > 0} hidden={mutuals?.length < 1}>
-							<Separator my={6}>Start a conversation</Separator>
-							{mutuals.map(user => <UserItem key={user._id} user={user} noChat />)}
-						</Skeleton>
-
-						<Skeleton isLoaded={recommended?.length > 0} hidden={recommended?.length < 1}>
-							<Separator my={6}>Find new friends</Separator>
-							{recommended.map(user => <UserItem key={user._id} user={user} onClick={() => handleToast()} />)}
-						</Skeleton>
+						{/* Find other rooms */}
+						<Button leftIcon={<FaGlobe />} colorScheme='blue' variant='solid' onClick={() => navigate('/explore')}>
+							Connect with people
+						</Button>
 					</List>
 				</VStack>
 

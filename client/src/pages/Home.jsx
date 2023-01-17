@@ -184,8 +184,8 @@ export default function Home() {
 					<AvatarGroup size='md' max={2}>
 						{currentUser.following.map(user => (
 							<Avatar key={'following_' + user._id} name={user.username} src={'/images/avatars/' + (inputs?.avatar || 'default.png')}>
-								<Tooltip label={user.username + (onlineUsers.some(u => u._id === user._id) ? ' is online' : ' was last seen ' + format(user.lastSeen))} placement='top'>
-									<AvatarBadge boxSize='1em' bg={onlineUsers.some(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
+								<Tooltip label={user.username + (onlineUsers.find(u => u._id === user._id) ? ' is online' : ' was last seen ' + format(user.lastSeen))} placement='top'>
+									<AvatarBadge boxSize='1em' bg={onlineUsers.find(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
 								</Tooltip>
 							</Avatar>
 						))}

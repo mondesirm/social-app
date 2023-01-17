@@ -57,7 +57,7 @@ export default function Register() {
 
 						<FormControl id='lastName' isRequired isInvalid={errors.lastName}>
 							<FormLabel>Last Name</FormLabel>
-							<Input name='lastName' type='text' autoComplete='lastName' autoFocus value={inputs.lastName} onBlur={handleChange} onChange={handleChange} />
+							<Input name='lastName' type='text' autoComplete='lastName' value={inputs.lastName} onBlur={handleChange} onChange={handleChange} />
 
 							{!errors.lastName
 								? (<FormHelperText>Enter a valid last name.</FormHelperText>)

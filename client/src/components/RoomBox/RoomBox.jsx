@@ -1,40 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-//! import { format } from 'timeago.js'
+import { format } from '../../helpers'
 import { useDispatch } from 'react-redux'
 import InputEmoji from 'react-input-emoji'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { FaCopy, FaEllipsisV, FaMotorcycle, FaPaperclip, FaPaperPlane, FaUserMinus, FaUserPlus } from 'react-icons/fa'
+import { Avatar, Box, Card, CardBody, CardFooter, CardHeader, Center, Flex, Heading, IconButton, Input, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Text, Tooltip, useClipboard, useColorModeValue, useMediaQuery } from '@chakra-ui/react'
 
 import './RoomBox.css'
-// import * as User from '../../api/UserRequests'
 import * as Message from '../../api/MessageRequests'
 import { useAuth } from '../../contexts/AuthContext'
-import { FaCopy, FaEllipsisV, FaMotorcycle, FaPaperclip, FaPaperPlane, FaUserMinus, FaUserPlus } from 'react-icons/fa'
-import { Avatar, AvatarBadge, AvatarGroup, Box, Card, CardBody, CardFooter, CardHeader, Center, Flex, Heading, IconButton, Input, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Text, Tooltip, useClipboard, useColorModeValue, useMediaQuery } from '@chakra-ui/react'
+import { useDatabase } from '../../contexts/DatabaseContext'
 
 export default function RoomBox({ icon, room, users, setCurrentRoom, setSendMessage, receivedMessage, ...rest }) {
-	const { currentUser, /* follow, unfollow, */ join, leave, toast /* upload */ } = useAuth()
+	const { currentUser, /* follow, unfollow, */ join, leave, toast, upload } = useAuth()
+	const { create } = useDatabase()
 	const dispatch = useDispatch()
-	const navigate = useNavigate()
 	const location = useLocation()
+	const navigate = useNavigate()
 	const [image, setImage] = useState(null)
-	const [messages, setMessages] = useState(room?.messages || [])
-	// const [user, setUserData] = useState(null)
 	const [newMessage, setNewMessage] = useState('')
 	const bg = useColorModeValue('white', 'gray.800')
 	const { onCopy, setValue, hasCopied } = useClipboard('')
 	const [screenIsSmall] = useMediaQuery('(max-width: 690px)')
-
-	// console.log(chat?.members.find(m => m._id !== currentUser._id))
-
-	// const format = date => {
-	// 	date = new Date(Date.now() - new Date(date).getTime())
-	// 	if (date.getTime() < 10000) return 'now'
-	// 	if (date.getTime() < 60000) return `${date.getMinutes()} s ago`
-	// 	if (date.getTime() < 3600000) return `${date.getHours()} min ago`
-	// 	if (date.getTime() < 86400000) return `${date.getDate()}h ago`
-	// 	return date.getDate() - 1 < 1 ? 'yesterday' : `${date.getDate() - 1}d+ ago`
-	// }
+	const [messages, setMessages] = useState(room?.messages || [])
 
 	useEffect(() => {
 		if (hasCopied) {
@@ -43,21 +32,14 @@ export default function RoomBox({ icon, room, users, setCurrentRoom, setSendMess
 		}
 	}, [hasCopied, toast])
 
-	/* const onImageChange = event => {
-		if (event.target.files && event.target.files[0]) {
-			let img = event.target.files[0]
-			setImage(img)
-		}
-	} */
-
 	useEffect(() => {
 		const fetchMessages = async () => {
 			try {
-				const { data } = await Message.of(room?._id)
+				const { data } = await Message.of('Room', room?._id)
 				setMessages(data)
 			} catch (err) {
 				setCurrentRoom(null)
-				toast({ description: 'This chat does not exist anymore', status: 'warning' })
+				toast({ description: 'This room does not exist anymore.', status: 'warning' })
 			}
 		}
 
@@ -68,57 +50,18 @@ export default function RoomBox({ icon, room, users, setCurrentRoom, setSendMess
 		scroll.current?.scrollIntoView({ behavior: 'smooth' })
 	}, [messages])
 
-	const handleSend = async e => {
-		e.preventDefault()
-
-		if (newMessage.replace(/\s/g, '') === '') return
-
-		const message = {
-			sender: currentUser,
-			text: newMessage,
-			chat: room
+	useEffect(() => {
+		if (receivedMessage?._id && receivedMessage?.model?._id === room?._id) {
+			setMessages([...messages, receivedMessage])
 		}
+	}, [room?._id, messages, receivedMessage])
 
-		if (image) {
-			const data = new FormData()
-			const fileName = Date.now() + image.name
-			data.append('name', fileName)
-			data.append('file', image)
-			newMessage.image = fileName
-			console.log(newMessage)
-
-			try {
-				dispatch(image(data))
-			} catch (err) {
-				console.log(err)
-			}
+	/* const onImageChange = event => {
+		if (event.target.files && event.target.files[0]) {
+			let img = event.target.files[0]
+			setImage(img)
 		}
-
-		const receiver = room.members.find(member => member._id !== currentUser._id)
-
-		// send message to socket server
-		setSendMessage({ ...message, receiver })
-
-		// send message to database
-		try {
-			const { data } = await Message.create(message)
-			setMessages([...messages, data])
-			setNewMessage('')
-			resetUpload()
-		} catch (err) {
-			setCurrentRoom(null)
-			toast({ description: 'This chat does not exist anymore', status: 'warning' })
-			console.log(err.message)
-		}
-	}
-
-	// TODO Receive Message from parent component
-	// useEffect(() => {
-	// 	console.log('Message Arrived: ', receivedMessage)
-	// 	if (receivedMessage?.id && receivedMessage?.chat?._id === chat?._id) {
-	// 		setMessages([...messages, receivedMessage])
-	// 	}
-	// }, [chat?._id, messages, receivedMessage])
+	} */
 
 	const scroll = useRef()
 	const imageRef = useRef()
@@ -137,14 +80,71 @@ export default function RoomBox({ icon, room, users, setCurrentRoom, setSendMess
 	// }
 
 	const handleJoin = async room => {
-		if (room?.members?.map(member => member._id).includes(currentUser._id)) return
+		if (room?.members?.map(m => m._id).includes(currentUser._id)) return
 		dispatch(join(room, navigate))
 	}
 
 	const handleLeave = async room => {
-		if (!room?.members?.map(member => member._id).includes(currentUser._id)) return
+		if (!room?.members?.map(m => m._id).includes(currentUser._id)) return
 		dispatch(leave(room, navigate, location))
 	}
+
+	const handleSend = async e => {
+		e.preventDefault()
+
+		if (newMessage.replace(/\s/g, '') === '') return
+
+		if (image) {
+			const data = new FormData()
+			const fileName = Date.now() + image.name
+			data.append('name', fileName)
+			data.append('file', image)
+			console.log(fileName)
+
+			try { dispatch(upload(data)) }
+			catch (err) { console.log(err) }
+		}
+
+		const message = {
+			text: newMessage,
+			image: image,
+			modelType: 'Room',
+			model: room,
+			sender: currentUser
+		}
+
+		const receivers = room.members.filter(m => m._id !== currentUser._id)
+		
+		// Send message to database
+		try {
+			// const { data } = await Message.create(message)
+			dispatch(create('Message', message))
+			setMessages([...messages, message])
+			setSendMessage({ ...message, receivers }) // Send message to socket server
+			setNewMessage('')
+			resetUpload()
+		} catch (err) {
+			setCurrentRoom(null)
+			toast({ description: 'This room does not exist anymore.', status: 'warning' })
+			console.log(err.message)
+		}
+	}
+
+	const MessageBubble = ({m, i}) => (
+		<Tooltip key={m._id} label={format(m.createdAt)}><>
+			{m.sender._id !== messages[i - 1]?.sender._id && <Text alignSelf={m.sender._id === currentUser._id ? 'end' : 'start'}>{m.sender.username}</Text>}
+
+			<Box ref={scroll}
+				className={
+					(m.sender._id === currentUser._id ? 'message self' : 'message other') +
+					(m.sender._id === messages[i - 1]?.sender._id && messages[i - 1]?.text?.length >= m.text.length ? ' top' : '') +
+					(m.sender._id === messages[i + 1]?.sender._id && messages[i + 1]?.text?.length >= m.text.length ? ' bottom' : '')
+				}
+			>
+				<Text>{m.text}</Text>
+			</Box>
+		</></Tooltip>
+	)
 
 	return (
 		<Card w='100%' justify='center' _hover={{ '& button': { opacity: 100 } }} {...rest}>
@@ -163,7 +163,7 @@ export default function RoomBox({ icon, room, users, setCurrentRoom, setSendMess
 
 								<Box>
 									<Heading size='sm'>{room.name}</Heading>
-									{room?.brand && <Text fontSize='xs' color='gray.500'>{room.brand.name}</Text>}
+									<Text fontSize='xs' color='gray.500'>{room?.brand ? room.brand.name : 'General'}</Text>
 								</Box>
 							</Flex>
 
@@ -203,19 +203,7 @@ export default function RoomBox({ icon, room, users, setCurrentRoom, setSendMess
 							<Text>This is the very start of the {room.name} room.</Text>
 						</Center>
 
-						{/* {messages.map((m, i) => (
-							<Tooltip key={m._id} label={format(m.createdAt)}>
-								<Box ref={scroll}
-									className={
-										(m.sender._id === currentUser._id ? 'message self' : 'message other') +
-										(m.sender._id === messages[i - 1]?.sender._id && messages[i - 1]?.text?.length >= m.text.length ? ' top' : '') +
-										(m.sender._id === messages[i + 1]?.sender._id && messages[i + 1]?.text?.length >= m.text.length ? ' bottom' : '')
-									}
-								>
-									<Text>{m.text}</Text>
-								</Box>
-							</Tooltip>
-						))} */}
+						{messages.map((m, i) => <MessageBubble key={`${i}_${m._id}`} m={m} i={i} />)}
 					</CardBody>
 
 					<CardFooter sx={{ alignItems: 'center' }}>

@@ -4,7 +4,8 @@ const schema = mongoose.Schema(
 	{
 		text: String,
 		image: String,
-		chat: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
+		modelType: String,
+		model: { type: mongoose.Schema.Types.ObjectId, refPath: 'modelType' },
 		sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 	},
 	{

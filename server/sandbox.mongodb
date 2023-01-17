@@ -1,4 +1,4 @@
-const [database, collection] = ['SocialApp', 'chats']
+const database = 'SocialApp'
 
 use(database)
 
@@ -9,9 +9,10 @@ use(database)
 // db.getCollectionNames()
 
 //? Reset (when the website is bugged)
-// db.chats.deleteMany({})
-// db.messages.deleteMany({})
-// db.users.updateMany({}, { $set: { following: [], followers: [] } })
+db.chats.deleteMany({})
+db.messages.deleteMany({})
+db.users.updateMany({}, { $set: { chats: [], rooms: [], following: [], followers: [] } })
+db.rooms.updateMany({}, { $set: { members: [] } })
 
 //? Debug
 // db.users.deleteMany({ username: "root" })

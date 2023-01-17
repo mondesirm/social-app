@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { useDispatch } from 'react-redux'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { FaCommentAlt, FaCopy, FaEllipsisV, FaHome, FaMotorcycle, FaQuestion, FaRecycle, FaSearch, FaTimes, FaUserMinus, FaUserPlus, FaUsers } from 'react-icons/fa'
+import { FaCommentAlt, FaCopy, FaEllipsisV, FaHome, FaMotorcycle, FaPlus, FaQuestion, FaRecycle, FaSearch, FaTimes, FaUserMinus, FaUserPlus, FaUsers } from 'react-icons/fa'
 import { Avatar, AvatarBadge, Box, Button, Card, CardBody, CardHeader, Center, Flex, Heading, HStack, IconButton, List, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Skeleton, Slide, Tab, TabList, TabPanel, TabPanels, Tabs, Tag, Text, Tooltip, useClipboard, useColorModeValue, useDisclosure, useMediaQuery, VStack } from '@chakra-ui/react'
 
 import './Chat.css'
@@ -19,7 +19,8 @@ export default function Room() {
 	const navigate = useNavigate()
 	const location = useLocation()
 	const [rooms, setRooms] = useState([])
-	const socket = useRef(io('ws://localhost:9000'))
+	// const [members, setMembers] = useState([])
+	const socket = useRef(io(process.env.REACT_APP_SOCKET_HOST))
 	const [currentRoom, setCurrentRoom] = useState(null)
 	const [sendMessage, setSendMessage] = useState(null)
 	const { onCopy, setValue, hasCopied } = useClipboard('')
@@ -51,6 +52,11 @@ export default function Room() {
 			else setCurrentRoom(null)
 		}
 
+		// Get current room's members
+		// const fetchMembers = async () => {
+		// 	if (!currentRoom) return
+		// 	const { data } = await RoomAPI.members(currentRoom._id)
+
 		fetchRooms()
 
 		// if (onlineSelf?.shouldUpdate) io.emit('updated', currentUser?._id)
@@ -78,29 +84,23 @@ export default function Room() {
 		return date.getDate() - 1 < 1 ? 'yesterday' : `${date.getDate() - 1}d+ ago`
 	}
 
-	// const checkOnlineStatus = chat => {
-	// 	const member = chat.members.find(m => m._id !== currentUser._id)
-	// 	const online = onlineUsers.find(u => u._id === member._id)
-	// 	return online ? true : false
-	// }
-
 	const handleFollow = async user => {
-		if (currentUser?.following?.map(other => other._id).includes(user._id)) return
+		if (currentUser?.following?.map(f => f._id).includes(user._id)) return
 		dispatch(follow(user))
 	}
 
 	const handleUnfollow = async user => {
-		if (!currentUser?.following?.map(other => other._id).includes(user._id)) return
+		if (!currentUser?.following?.map(f => f._id).includes(user._id)) return
 		dispatch(unfollow(user))
 	}
 
 	const handleJoin = async room => {
-		if (room?.members?.map(member => member._id).includes(currentUser._id)) return
+		if (room?.members?.map(m => m._id).includes(currentUser._id)) return
 		dispatch(join(room, navigate))
 	}
 
 	const handleLeave = async room => {
-		if (!room?.members?.map(member => member._id).includes(currentUser._id)) return
+		if (!room?.members?.map(m => m._id).includes(currentUser._id)) return
 		dispatch(leave(room, navigate, location))
 	}
 
@@ -108,14 +108,14 @@ export default function Room() {
 
 	// const handleToast = () => toast({ description: 'You must be mutuals with this user to message them.', status: 'info' })
 
-	const UserItem = ({ user, noChat, online, onClick, ...rest }) => (
+	const UserItem = ({ user, noChat, onClick, ...rest }) => (
 		<Card variant='outline' maxW='md' _hover={{ background: useColorModeValue('gray.100', 'gray.500'), '& button': { opacity: 100 } }} cursor='pointer' {...rest}>
 			<CardHeader>
 				<Flex spacing='4'>
 					<Flex flex='1' gap='4' alignItems='center' flexWrap='wrap' onClick={noChat ? () => handleMessage(user) : onClick}>
 						<Avatar src={'/images/avatars/' + (user?.avatar || 'default.png')} size='sm'>
-							<Tooltip label={/* user.isOnline || */ online ? 'Online' : 'Last seen ' + format(user.lastSeen)} placement='top'>
-								<AvatarBadge boxSize='1em' bg={/* user.isOnline || */ online ? 'green.500' : 'gray.500'} />
+							<Tooltip label={onlineUsers.find(u => u._id === user._id) ? 'Online' : 'Last seen ' + format(user.lastSeen)} placement='top'>
+								<AvatarBadge boxSize='1em' bg={onlineUsers.find(u => u._id === user._id) ? 'green.500' : 'gray.500'} />
 							</Tooltip>
 						</Avatar>
 
@@ -124,8 +124,10 @@ export default function Room() {
 							<Text fontSize='xs' color='gray.500'>(@{user.username})</Text>
 						</Box>
 
-						{user.following.includes(currentUser._id) && <Tag>{user.followers.includes(currentUser._id) ? 'Mutual' : 'Follower'}</Tag>}
-						{user.followers.includes(currentUser._id) && !user.following.includes(currentUser._id) && <Tag>Following</Tag>}
+						{user._id !== currentUser._id && (<>
+							{user.following.includes(currentUser._id) && <Tag>{user.followers.includes(currentUser._id) ? 'Mutual' : 'Follower'}</Tag>}
+							{user.followers.includes(currentUser._id) && !user.following.includes(currentUser._id) && <Tag>Following</Tag>}
+						</>)}
 					</Flex>
 
 					<Menu>
@@ -143,14 +145,16 @@ export default function Room() {
 							/>
 
 							<MenuList>
-								<MenuItem icon={<FaCommentAlt />} onClick={noChat ? () => handleMessage(user) : onClick}>Message</MenuItem>
+								{user._id !== currentUser._id && (<>
+									<MenuItem icon={<FaCommentAlt />} onClick={noChat ? () => handleMessage(user) : onClick}>Message</MenuItem>
 
-								{currentUser?.following?.map(other => other._id).includes(user._id)
-									? <MenuItem icon={<FaUserMinus />} onClick={() => { handleUnfollow(user) }}>Unfollow</MenuItem>
-									: <MenuItem icon={<FaUserPlus />} onClick={() => { handleFollow(user) }}>Follow</MenuItem>
-								}
+									{currentUser?.following?.map(other => other._id).includes(user._id)
+										? <MenuItem icon={<FaUserMinus />} onClick={() => { handleUnfollow(user) }}>Unfollow</MenuItem>
+										: <MenuItem icon={<FaUserPlus />} onClick={() => { handleFollow(user) }}>Follow</MenuItem>
+									}
 
-								<MenuDivider />
+									<MenuDivider />
+								</>)}
 
 								<MenuItem icon={<FaCopy />} onClick={() => { setValue(user._id); onCopy() }}>
 									Copy ID
@@ -197,7 +201,7 @@ export default function Room() {
 							/>
 
 							<MenuList>
-								<MenuItem icon={<FaCommentAlt />} onClick={onClick}>Message</MenuItem>
+								<MenuItem icon={<FaCommentAlt />} onClick={onClick}>Enter</MenuItem>
 
 								
 								{room?.members?.map(m => m._id).includes(currentUser?._id)
@@ -218,7 +222,7 @@ export default function Room() {
 		</Card>
 	)
 
-	const MembersList = ({ online, offline }) => {
+	const MembersList = ({ online, offline, disabled }) => {
 		const { isOpen, onToggle } = useDisclosure()
 
 		return (
@@ -265,7 +269,7 @@ export default function Room() {
 												{users.length < 1 && (
 													<Center>
 														<Text fontSize='xl' fontStyle='italic' color='gray.500'>
-															There are no members in this room.
+															Nothing to see here...
 														</Text>
 													</Center>
 												)}
@@ -285,15 +289,17 @@ export default function Room() {
 		<Layout noFooter>
 			<HStack spacing={4} align='stretch' h='calc(100vh - 6.125rem)'>
 				<VStack hidden={screenIsSmall} spacing={4} align='stretch' shadow='dark-lg' p={4} rounded='md' bg='gray.700'>
-					{/* {currentRoom && <MembersList online={onlineUsers} offline={currentRoom?.members} />} */}
+					<MembersList online={currentRoom?.members.filter(m => onlineUsers.map(u => u._id).includes(m._id)) || []} offline={currentRoom?.members.filter(m => !onlineUsers.map(u => u._id).includes(m._id)) || []} />
 
-					<List spacing={3}>
+					<List spacing={3} display='grid' alignItems='stretch'>
+						<Separator mb={3} action={<FaPlus />} staff>Rooms</Separator>
+
 						{rooms.map(r =>
 							<RoomItem
 								key={r._id}
 								icon={icons[r.name] || null}
 								room={r}
-								onClick={() => setCurrentRoom(r)}
+								onClick={() => { setCurrentRoom(r); navigate(`/room/${r._id}`) }}
 								bg={currentRoom?._id === r._id && 'gray.600'}
 							/>
 						)}

@@ -49,10 +49,10 @@ export const update = async (req, res) => {
 		if (taken && taken.email != self.email) return res.status(403).json({ message: 'Username or email already taken.' })
 
 		// TODO hash password if submitted
-		// if (req.body?.password) {
-		// 	const salt = await bcrypt.genSalt(10)
-		// 	req.body.password = await bcrypt.hash(req.body.password, salt)
-		// }
+		if (req.body?.password) {
+			const salt = await bcrypt.genSalt(10)
+			req.body.password = await bcrypt.hash(req.body.password, salt)
+		}
 
 		// const user = await User.findByIdAndUpdate(id, req.body, { new: true }).select('-password')
 		// merge user with req.body
@@ -123,6 +123,8 @@ export const unfollow = async (req, res) => {
 		if (!other.followers.includes(id)) return res.status(403).json({ message: 'You do not follow this user yet.' })
 
 		self.following = self.following.filter(f => f._id != _id)
+		self.followers = self.followers.filter(f => f._id != _id)
+		other.following = other.following.filter(f => f._id != id)
 		other.followers = other.followers.filter(f => f._id != id)
 
 		self.save()
