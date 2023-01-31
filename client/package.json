@@ -1,7 +1,7 @@
 {
   "name": "social-app-client",
   "author": "MONDESIR Malik",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Social App Client",
   "private": true,
   "main": "src/index.js",
@@ -32,7 +32,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "WATCHPACK_POLLING=true react-scripts start",
+    "start": "set WATCHPACK_POLLING=true && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

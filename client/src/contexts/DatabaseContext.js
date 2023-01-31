@@ -12,6 +12,8 @@ import * as Message from '../api/MessageRequests'
 
 const DatabaseContext = createContext({
 	db: {},
+	bot: {},
+	botChat: {},
 	isFetching: false,
 	isCreating: false,
 	isUpdating: false,
@@ -19,6 +21,8 @@ const DatabaseContext = createContext({
 	isUploading: false,
 	isFailing: false,
 	toast: null,
+	moveStep: () => Promise,
+	storeMessage: () => Promise,
 	all: () => Promise,
 	of: () => Promise,
 	one: () => Promise,
@@ -32,7 +36,7 @@ export const useDatabase = () => useContext(DatabaseContext)
 
 export default function DatabaseContextProvider({ children }) {
 	const { onlineUsers } = useSelector(state => state.authReducer)
-	const { db, isFetching, isCreating, isUpdating, isDeleting, isUploading, isFailing } = useSelector(state => state.databaseReducer)
+	const { db, bot, botChat, isFetching, isCreating, isUpdating, isDeleting, isUploading, isFailing } = useSelector(state => state.databaseReducer)
 	const socket = useRef(null)
 	const models = { Auth, Chat, User, Room, Upload, Message }
 	const toast = useToast({ isClosable: true, status: 'success', duration: 2000 })
@@ -59,11 +63,33 @@ export default function DatabaseContextProvider({ children }) {
 			else toast({ id: 'database', description: 'Uploading...', status: 'info' })
 		}
 
-		if (isFailing) {
-			if (toast.isActive('database')) toast.update('database', { description: 'Error fetching data.', status: 'error' })
-			else toast({ id: 'database', description: 'Error fetching data.', status: 'error' })
-		}
+		// if (isFailing) {
+		// 	if (toast.isActive('database')) toast.update('database', { description: 'Error fetching data.', status: 'error' })
+		// 	else toast({ id: 'database', description: 'Error fetching data.', status: 'error' })
+		// }
 	}, [isFetching, isCreating, isUpdating, isDeleting, isUploading, isFailing, toast])
+
+	const moveStep = (step, sender) => async dispatch => {
+		try {
+			dispatch({ type: 'MOVE_STEP', data: step })
+			socket.current = io(process.env.REACT_APP_SOCKET_HOST)
+			socket.current.emit('send-to-bot', { sender, text: step })
+
+			if (toast.isActive('database')) toast.update('database', { description: 'Moving to step: ' + step, status: 'info' })
+			else toast({ id: 'database', description: 'Moving to step: ' + step, status: 'info' })
+		} catch (err) { console.log(err); }
+	}
+
+	const storeMessage = data => async dispatch => {
+		try {
+			dispatch({ type: 'STORE_MESSAGE', data })
+			socket.current = io(process.env.REACT_APP_SOCKET_HOST)
+			socket.current.emit('send-to-bot', data)
+
+			if (toast.isActive('database')) toast.update('database', { description: 'Moving to step: ' + data.text, status: 'info' })
+			else toast({ id: 'database', description: 'Moving to step: ' + data.text, status: 'info' })
+		} catch (err) { console.log(err); }
+	}
 
 	const all = model => async dispatch => {
 		dispatch({ type: 'FETCHING_START' })
@@ -71,7 +97,7 @@ export default function DatabaseContextProvider({ children }) {
 		try {
 			const { data } = await models[model].all()
 			dispatch({ type: 'FETCHING_SUCCESS', data, model })
-		} catch (err) { console.log(err); dispatch({ type: 'FETCHING_FAIL' }) }
+		} catch (err) { dispatch({ type: 'FETCHING_FAIL' }) }
 	}
 
 	const of = (model, id) => async dispatch => {
@@ -163,12 +189,16 @@ export default function DatabaseContextProvider({ children }) {
 
 	const value = {
 		db,
+		bot,
+		botChat,
 		isFetching,
 		isCreating,
 		isUpdating,
 		isDeleting,
 		isUploading,
 		isFailing,
+		moveStep,
+		storeMessage,
 		all,
 		of,
 		one,

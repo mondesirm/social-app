@@ -41,8 +41,11 @@ export default function AuthContextProvider({ children }) {
 	useEffect(() => {
 		if (currentUser?._id && currentUser?._id !== null) {
 			socket.current = io(process.env.REACT_APP_SOCKET_HOST)
-			socket.current.emit('add-user', currentUser?._id)
-			socket.current.on('get-users', users => setOnlineUsers(users))
+
+			setTimeout(() => {
+				socket.current.emit('add-user', currentUser?._id)
+				socket.current.on('get-users', users => setOnlineUsers(users))
+			}, 1000)
 		}
 	}, [currentUser?._id])
 
@@ -113,6 +116,7 @@ export default function AuthContextProvider({ children }) {
 		try {
 			await Auth.logout(inputs)
 			dispatch({ type: 'LOGOUT_SUCCESS' })
+			dispatch({ type: 'RESET_DB' })
 			socket.current.emit('logout')
 			navigate('/login', { replace: true })
 

@@ -4,16 +4,16 @@ import { format } from '../../helpers'
 import { useDispatch } from 'react-redux'
 import InputEmoji from 'react-input-emoji'
 import { FaCopy, FaEllipsisV, FaPaperclip, FaPaperPlane, FaUserMinus, FaUserPlus } from 'react-icons/fa'
-import { Avatar, AvatarBadge, Box, Card, CardBody, CardFooter, CardHeader, Center, Flex, Heading, IconButton, Input, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Tag, Text, Tooltip, useClipboard, useColorModeValue, useMediaQuery } from '@chakra-ui/react'
+import { Avatar, AvatarBadge, Box, Button, Card, CardBody, CardFooter, CardHeader, Center, Flex, Heading, IconButton, Input, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Tag, Text, Tooltip, useClipboard, useColorModeValue, useMediaQuery } from '@chakra-ui/react'
 
 import './ChatBox.css'
 import * as Message from '../../api/MessageRequests'
 import { useAuth } from '../../contexts/AuthContext'
 import { useDatabase } from '../../contexts/DatabaseContext'
 
-export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, receivedMessage, ...rest }) {
+export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, receivedMessage, actions, ...rest }) {
 	const { currentUser, onlineUsers, follow, unfollow, toast, upload } = useAuth()
-	const { create } = useDatabase()
+	const { storeMessage, create } = useDatabase()
 	const dispatch = useDispatch()
 	const [image, setImage] = useState(null)
 	const [newMessage, setNewMessage] = useState('')
@@ -32,8 +32,11 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 	useEffect(() => {
 		const fetchMessages = async () => {
 			try {
-				const { data } = await Message.of('Chat', chat?._id)
-				setMessages(data)
+				if (chat?._id === 'bot') setMessages(chat?.messages || [])
+				else {
+					const { data } = await Message.of('Chat', chat?._id)
+					setMessages(data)
+				}
 			} catch (err) {
 				setCurrentChat(null)
 				toast({ description: 'This chat does not exist anymore.', status: 'warning' })
@@ -48,7 +51,10 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 	}, [messages])
 
 	useEffect(() => {
-		if (receivedMessage?._id && receivedMessage?.model?._id === chat?._id) {
+		if (
+			receivedMessage?.sender?._id === 'bot' ||
+			(receivedMessage?._id && receivedMessage?.model?._id === chat?._id)
+		) {
 			setMessages([...messages, receivedMessage])
 		}
 	}, [chat?._id, messages, receivedMessage])
@@ -76,6 +82,26 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 		dispatch(unfollow(user))
 	}
 
+	const handleAction = action => {
+		// TODO keeping the unused data to implement the bot in rooms later
+		const message = {
+			text: action.step,
+			image,
+			modelType: 'Chat',
+			model: chat,
+			sender: currentUser,
+			createdAt: new Date()
+		}
+		const receivers = []
+
+		// TODO Store bot conversation as well?
+		dispatch(storeMessage(message))
+		setMessages([...messages, message])
+		setSendMessage({ ...message, receivers }) // Send message to socket server
+		setNewMessage('')
+		resetUpload()
+	}
+
 	const handleSend = async e => {
 		e.preventDefault()
 
@@ -94,7 +120,7 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 
 		const message = {
 			text: newMessage,
-			image: image,
+			image,
 			modelType: 'Chat',
 			model: chat,
 			sender: currentUser
@@ -149,8 +175,13 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 									<Text fontSize='xs' color='gray.500'>(@{user.username})</Text>
 								</Box>
 
-								{user.following.includes(currentUser._id) && <Tag>{user.followers.includes(currentUser._id) ? 'Mutual' : 'Follower'}</Tag>}
-								{user.followers.includes(currentUser._id) && !user.following.includes(currentUser._id) && <Tag>Following</Tag>}
+								{user._id === 'bot'
+									? <Tag>Bot</Tag>
+									: <>
+										{user.following.includes(currentUser._id) && <Tag>{user.followers.includes(currentUser._id) ? 'Mutual' : 'Follower'}</Tag>}
+										{user.followers.includes(currentUser._id) && !user.following.includes(currentUser._id) && <Tag>Following</Tag>}
+									</>
+								}
 							</Flex>
 
 							<Menu>
@@ -168,10 +199,12 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 									/>
 
 									<MenuList>
-										{currentUser?.following?.map(other => other._id).includes(user._id)
-											? <MenuItem icon={<FaUserMinus />} onClick={() => { handleUnfollow(user) }}>Unfollow</MenuItem>
-											: <MenuItem icon={<FaUserPlus />} onClick={() => { handleFollow(user) }}>Follow</MenuItem>
+										{user._id !== 'bot' &&
+											currentUser?.following?.map(other => other._id).includes(user._id)
+												? <MenuItem icon={<FaUserMinus />} onClick={() => { handleUnfollow(user) }}>Unfollow</MenuItem>
+												: <MenuItem icon={<FaUserPlus />} onClick={() => { handleFollow(user) }}>Follow</MenuItem>
 										}
+										
 
 										<MenuDivider />
 
@@ -192,9 +225,15 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 						{messages.map((m, i) => <MessageBubble key={`${i}_${m._id}`} m={m} i={i} />)}
 					</CardBody>
 
+					{user._id === 'bot' && <Flex flexDir='row-reverse' alignItems='center' gap={2} p={4} pb={0} overflowX='auto'>
+						{actions.map(action => (
+							<Button key={action.step} size='sm' colorScheme='pink' onClick={() => handleAction(action)}>{action.label}</Button>
+						))}
+					</Flex>}
+
 					<CardFooter sx={{ alignItems: 'center' }}>
-						{user.followers.includes(currentUser._id) && user.following.includes(currentUser._id) ? (<>
-							<IconButton icon={<FaPaperclip />} onClick={() => imageRef.current.click()} />
+						{user._id === 'bot' || (user.followers.includes(currentUser._id) && user.following.includes(currentUser._id)) ? (<>
+							{/* TODO <IconButton icon={<FaPaperclip />} onClick={() => imageRef.current.click()} /> */}
 							<Input as={InputEmoji} value={newMessage} onChange={handleChange} onKeyDown={async e => e.key === 'Enter' && handleSend(e) } /* ref={inputRef} */ mixBlendMode='plus-lighter' />
 							<IconButton icon={<FaPaperPlane />} colorScheme='pink' onClick={handleSend} />
 							{/* <input type='file' name='' id='' style={{ display: 'none' }} ref={imageRef} onChange={handleImage} /> */}
@@ -209,6 +248,7 @@ export default function ChatBox({ chat, user, setCurrentChat, setSendMessage, re
 						: <>
 							<Text>Click on a chat or start one with your mutuals!</Text>
 							<Text>You must be following each other to start a chat.</Text>
+							<Text>Unless it's the bot, of course!</Text>
 						</>}
 				</Center>
 			}

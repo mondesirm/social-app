@@ -128,6 +128,8 @@ export default function Room() {
 							{user.following.includes(currentUser._id) && <Tag>{user.followers.includes(currentUser._id) ? 'Mutual' : 'Follower'}</Tag>}
 							{user.followers.includes(currentUser._id) && !user.following.includes(currentUser._id) && <Tag>Following</Tag>}
 						</>)}
+
+						{user?.roles.includes('staff') && <Tag>Staff</Tag>}
 					</Flex>
 
 					<Menu>

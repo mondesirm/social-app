@@ -3,7 +3,7 @@ import { io } from 'socket.io-client'
 import { useDispatch } from 'react-redux'
 import { SearchIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from 'react-router-dom'
-import { FaCommentAlt, FaCopy, FaEllipsisV, FaEnvelope, FaEnvelopeOpen, FaGlobe, FaPlus, FaTimes, FaUserMinus, FaUserPlus } from 'react-icons/fa'
+import { FaCommentAlt, FaCopy, FaEllipsisV, FaEnvelope, FaEnvelopeOpen, FaGlobe, FaPlus, FaRobot, FaTimes, FaUserMinus, FaUserPlus } from 'react-icons/fa'
 import { Avatar, AvatarBadge, Box, Button, Card, CardBody, CardHeader, Center, Flex, Heading, HStack, IconButton, Input, InputGroup, InputLeftElement, List, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger, Skeleton, Slide, Tab, TabList, TabPanel, TabPanels, Tabs, Tag, Text, Tooltip, useClipboard, useColorModeValue, useDisclosure, useMediaQuery, VStack } from '@chakra-ui/react'
 
 import './Chat.css'
@@ -18,7 +18,7 @@ import { useDatabase } from '../contexts/DatabaseContext'
 
 export default function Chat() {
 	const { currentUser, onlineUsers, follow, unfollow, toast } = useAuth()
-	const { create } = useDatabase()
+	const { bot, botChat, create } = useDatabase()
 	const { id } = useParams()
 	const dispatch = useDispatch()
 	const navigate = useNavigate()
@@ -26,14 +26,15 @@ export default function Chat() {
 	const [chats, setChats] = useState([])
 	const [mutuals, setMutuals] = useState([])
 	const [received, setReceived] = useState([])
-	const socket = useRef(io(process.env.REACT_APP_SOCKET_HOST))
 	const [currentChat, setCurrentChat] = useState(null)
 	const [sendMessage, setSendMessage] = useState(null)
 	const { onCopy, setValue, hasCopied } = useClipboard('')
 	const [screenIsSmall] = useMediaQuery('(max-width: 690px)')
 	const [receivedMessage, setReceivedMessage] = useState(null)
+	const socket = useRef(io(process.env.REACT_APP_SOCKET_HOST))
 	const onlineSelf = onlineUsers.find(u => u._id === currentUser._id)
-
+	const [actions, setActions] = useState([{ label: 'Start Chat', step: 'start' }])
+	
 	useEffect(() => {
 		if (hasCopied) {
 			if (toast.isActive('auth')) toast.update('auth', { description: 'Copied to clipboard!' })
@@ -48,7 +49,7 @@ export default function Chat() {
 			const { data } = await ChatAPI.of(currentUser._id)
 			setChats(data)
 
-			if (id) setCurrentChat(data.find(c => c._id === id))
+			if (id) setCurrentChat(id === 'bot' ? botChat : data.find(c => c._id === id))
 			else setCurrentChat(null)
 		}
 
@@ -71,18 +72,29 @@ export default function Chat() {
 		fetchUsers()
 
 		// if (onlineSelf?.shouldUpdate) io.emit('updated', currentUser?._id)
-	}, [currentUser, currentChat?._id, onlineSelf, id])
+	}, [currentUser, currentChat?._id, onlineSelf, id, bot, botChat])
 
 	// Send message to socket server
 	useEffect(() => {
-		if (sendMessage !== null) socket.current.emit('send-message', sendMessage)
-	}, [sendMessage])
+		if (sendMessage !== null) {
+			socket.current.emit(id === 'bot' ? 'send-to-bot' : 'send-message', sendMessage)
+		}
+	}, [id, sendMessage])
 
-	// Get the message from socket server
+	// Get messages from socket server
 	useEffect(() => {
 		socket.current.on('receive-message', data => {
 			console.log(data)
 			setReceivedMessage(data)
+		})
+	}, [])
+
+	// Get bot responses from socket server
+	useEffect(() => {
+		socket.current.on('receive-from-bot', ({ actions, message }) => {
+			console.log(message)
+			setActions(actions)
+			setReceivedMessage(message)
 		})
 	}, [])
 
@@ -111,6 +123,45 @@ export default function Chat() {
 		setCurrentChat(null)
 	}
 
+	const BotItem = ({ onClick, ...rest }) => (
+		<Card variant='outline' maxW='md' _hover={{ background: useColorModeValue('gray.100', 'gray.500'), '& button': { opacity: 100 } }} cursor='pointer' {...rest}>
+			<CardHeader>
+				<Flex spacing='4'>
+					<Flex flex='1' gap='4' alignItems='center' flexWrap='wrap' onClick={onClick}>
+						<Avatar bg='blue.500' icon={<FaRobot />} size='sm' />
+
+						<Box>
+							<Heading size='sm'>{bot.firstName} {bot.lastName}</Heading>
+							<Text fontSize='xs' color='gray.500'>(@{bot.username})</Text>
+						</Box>
+
+						<Tag bg='blue.500'>Bot</Tag>
+					</Flex>
+
+					<Menu>
+						{({ isOpen }) => (<>
+							<MenuButton
+								as={IconButton}
+								variant='outline'
+								bg='gray.600'
+								shadow='dark-lg'
+								aria-label='Options'
+								icon={<FaEllipsisV />}
+								opacity={0}
+								_active={{ opacity: 100 }}
+								transform={isOpen ? 'rotate(90deg)' : 'rotate(0deg)'}
+							/>
+
+							<MenuList>
+								<MenuItem icon={<FaCommentAlt />} onClick={() => navigate('/chat/bot')}>Start Chat</MenuItem>
+							</MenuList>
+						</>)}
+					</Menu>
+				</Flex>
+			</CardHeader>
+		</Card>
+	)
+
 	const UserItem = ({ user, noChat, onClick, ...rest }) => (
 		<Card variant='outline' maxW='md' _hover={{ background: useColorModeValue('gray.100', 'gray.500'), '& button': { opacity: 100 } }} cursor='pointer' {...rest}>
 			<CardHeader>
@@ -129,6 +180,8 @@ export default function Chat() {
 
 						{user.following.includes(currentUser._id) && <Tag>{user.followers.includes(currentUser._id) ? 'Mutual' : 'Follower'}</Tag>}
 						{user.followers.includes(currentUser._id) && !user.following.includes(currentUser._id) && <Tag>Following</Tag>}
+
+						{user?.roles.includes('staff') && <Tag>Staff</Tag>}
 					</Flex>
 
 					<Menu>
@@ -286,6 +339,8 @@ export default function Chat() {
 					<List spacing={3} display='grid' alignItems='stretch'>
 						<Separator mb={3} action={<CreateChatPopover />}>Chats</Separator>
 
+						<BotItem bg={currentChat?._id === 'bot' && 'gray.600'} onClick={() => { setCurrentChat(botChat); navigate('/chat/bot') }} />
+
 						{chats.map(c =>
 							<UserItem
 								key={c._id}
@@ -310,7 +365,7 @@ export default function Chat() {
 					</List>
 				</VStack>
 
-				<ChatBox chat={currentChat} setCurrentChat={setCurrentChat} setSendMessage={setSendMessage} receivedMessage={receivedMessage} user={currentChat?.members?.find(m => m._id !== currentUser._id)} />
+				<ChatBox chat={currentChat} setCurrentChat={setCurrentChat} setSendMessage={setSendMessage} receivedMessage={receivedMessage} user={currentChat?.members?.find(m => m._id !== currentUser._id)} actions={actions} />
 				{/* <VStack spacing={4} justify='center' align='stretch' shadow='dark-lg' p={4} rounded='md' bg='gray.700'>
 				</VStack> */}
 			</HStack>

@@ -140,11 +140,17 @@ export const join = async (req, res) => {
 
 	try {
 		const user = await User.findById(id).populate('chats').populate('rooms').populate('following').populate('followers')
-		const room = await Room.findById(_id)
+		const room = await Room.findById(_id).populate('members')
 
 		if (!user) return res.status(404).json({ message: 'User not found.' })
 		if (!room) return res.status(404).json({ message: 'Room not found.' })
-		if (room.members.includes(id)) return res.status(403).json({ message: 'You are already a member of this room.' })
+		if (room.members.map(m => m._id).includes(id)) return res.status(403).json({ message: 'You are already a member of this room.' })
+
+		// If room has a limit and it's full (excluding staff)
+		if (
+			room.limits !== -1 &&
+			room.members.filter(m => !m.role.includes('staff')).length >= room.limits
+		) return res.status(403).json({ message: 'Room is full.' })
 
 		await user.updateOne({ $push: { rooms: room } })
 		await room.updateOne({ $push: { members: user } })

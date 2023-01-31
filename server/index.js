@@ -1,4 +1,5 @@
 import cors from 'cors'
+import dotenv from 'dotenv'
 import express from 'express'
 import mongoose from 'mongoose'
 import bodyParser from 'body-parser'
@@ -22,7 +23,7 @@ app.use(express.static('public'))
 app.use('/images', express.static('images'))
 app.use('/scripts', express.static('scripts'))
 
-// dotenv.config()
+dotenv.config()
 
 // Connect to MongoDB
 mongoose.connect(process.env.DB_CONN, { useNewUrlParser: true, useUnifiedTopology: true })

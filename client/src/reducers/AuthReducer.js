@@ -43,6 +43,9 @@ export default function authReducer(state = initialState, action) {
 					]
 				}
 			} */
+		
+		case 'RESET_BOOLEANS': return { ...state, isAuthenticating: false, isLoggingOut: false, isUpdating: false, isJoining: false, isLeaving: false, isFailing: false }
+
 		default: return state
 	}
 }

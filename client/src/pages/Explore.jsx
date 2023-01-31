@@ -195,7 +195,7 @@ export default function Explore() {
 								room.brand?.name.toLowerCase().includes(search.toLowerCase())
 							) &&
 							// If room is private, only show to admins
-							(!room?.isPrivate || currentUser?.roles?.includes('admin'))
+							(!room?.isPrivate || currentUser?.roles?.includes('staff'))
 							// If selectedTab is -1, show all rooms else show only rooms with the selected brand
 							// General rooms (without brand) are shown if selectedTab is undefined because room.brand?._id would be undefined
 							&& room.brand?._id === (selectedTab === -1 ? room.brand?._id : selectedTab) && (

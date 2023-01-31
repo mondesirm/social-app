@@ -94,7 +94,7 @@ export default function Home() {
 		<Layout>
 			<Heading>Account</Heading>
 
-			<pre>{JSON.stringify(onlineUsers, null, 2)}</pre>
+			{/* <pre>{JSON.stringify(onlineUsers, null, 2)}</pre> */}
 
 			<Container maxW='container.lg' overflowX='auto' py={4}>
 				<Flex w='100%' columnGap='.5em'>

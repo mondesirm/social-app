@@ -1,11 +1,12 @@
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 
-import Brand from './Brand.js'
 import Chat from './Chat.js'
-import User from './User.js'
 import Room from './Room.js'
+import User from './User.js'
+import Brand from './Brand.js'
 import Message from './Message.js'
+import Appointment from './Appointment.js'
 
 dotenv.config()
 
@@ -15,4 +16,4 @@ mongoose.connect(process.env.DB_CONN, { useNewUrlParser: true, useUnifiedTopolog
 
 export default mongoose
 
-export { Brand, Chat, User, Room, Message }
+export { Chat, Room, User, Brand, Message, Appointment }

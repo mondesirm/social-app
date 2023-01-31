@@ -1,4 +1,20 @@
-import { Chat, Message, User } from '../models/index.js'
+import { Chat, Message, User, Appointment } from '../models/index.js'
+
+export const bot = async (req, res) => {
+	const { _id, data, date } = req.body
+
+	try {
+		const customer = await User.findById(_id).populate('chats').populate('rooms').populate('following').populate('followers')
+		if (!customer) return res.status(404).json({ message: 'User not found.' })
+
+		const appointment = new Appointment({ customer, data, date })
+
+		await appointment.populate('customer', '-password')
+		await appointment.save()
+
+		res.status(200).json(appointment)
+	} catch (err) { res.status(500).json(err) }
+}
 
 export const create = async (req, res) => {
 	try {

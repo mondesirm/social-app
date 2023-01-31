@@ -1,7 +1,7 @@
 {
   "name": "social-app-server",
   "author": "MONDESIR Malik",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Social App Server",
   "private": true,
   "main": "index.js",

@@ -20,15 +20,15 @@ var mongoURL = process.env.DB_CONN
 args.forEach(arg => {
 	// If -h or --help is passed as argument then print help
 	if (arg == '-h' || arg == '--help' || arg == 'help') {
-		console.log('Usage: node init.js [<arg>] [...options]')
+		console.log('Usage: node migrate.js [<arg>] [...options]')
 		// Subcommands
 		console.log('\nArguments:')
 		console.log('help				Show this help message')
 		console.log('<URL>				MongoDB connection URL')
 		console.log('\nExamples:')
-		console.log('node init.js help')
-		console.log('node init.js mongodb[+srv]://<user>:<pass>@<host>[/<db>]')
-		console.log('node init.js -i coll2,coll3 -d')
+		console.log('node migrate.js help')
+		console.log('node migrate.js mongodb[+srv]://<user>:<pass>@<host>[/<db>]')
+		console.log('node migrate.js -i coll2,coll3 -d')
 		console.log('\nOptions:')
 		console.log('[-h | --help]			Show this help message')
 		console.log('[-o | --only] <collections>	Only load the specified comma-separated collections')
