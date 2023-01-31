@@ -3,7 +3,6 @@ version: '3.6'
 services:
   mongo:
     image: mongo
-    # restart: always
     container_name: social-app-mongo
     ports:
       - 27017:27017
@@ -13,9 +12,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_PASS}
     volumes:
-      # - ./SampleCollections:/usr/local/sampleCollections
       - mongo-data:/data/db
-    # working_dir: /usr/local/sampleCollections
 
   # admin:
   #   image: mongo-express
