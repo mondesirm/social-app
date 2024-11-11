@@ -37,6 +37,6 @@ app.use('/upload', UploadRoute)
 app.use('/chat', ChatRoute)
 app.use('/room', RoomRoute)
 app.use('/message', MessageRoute)
-app.use('/status', (req, res) => res.status(200).json({ message: 'API is running.' }))
+app.use('/', (req, res) => res.status(200).json({ message: 'API is running.' }))
 
 export default app

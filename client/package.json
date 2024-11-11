@@ -5,7 +5,7 @@
   "description": "Social App Client",
   "private": true,
   "main": "src/index.js",
-  "proxy": "http://localhost:5000/",
+  "proxy": "https://social-app-server-delta.vercel.app/",
   "license": "ISC",
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
