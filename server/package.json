@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Social App Server",
   "private": true,
-  "main": "index.js",
+  "main": "api/index.js",
   "type": "module",
   "license": "ISC",
   "scripts": {
