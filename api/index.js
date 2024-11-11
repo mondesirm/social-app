@@ -4,12 +4,12 @@ import express from 'express'
 import mongoose from 'mongoose'
 import bodyParser from 'body-parser'
 
-import AuthRoute from '../routes/AuthRoute.js'
-import ChatRoute from '../routes/ChatRoute.js'
-import RoomRoute from '../routes/RoomRoute.js'
-import UserRoute from '../routes/UserRoute.js'
-import UploadRoute from '../routes/UploadRoute.js'
-import MessageRoute from '../routes/MessageRoute.js'
+import AuthRoute from './routes/AuthRoute.js'
+import ChatRoute from './routes/ChatRoute.js'
+import RoomRoute from './routes/RoomRoute.js'
+import UserRoute from './routes/UserRoute.js'
+import UploadRoute from './routes/UploadRoute.js'
+import MessageRoute from './routes/MessageRoute.js'
 
 const app = express()
 
@@ -37,6 +37,5 @@ app.use('/upload', UploadRoute)
 app.use('/chat', ChatRoute)
 app.use('/room', RoomRoute)
 app.use('/message', MessageRoute)
-app.use('/', (req, res) => res.status(200).json({ message: 'API is running.' }))
 
 export default app
