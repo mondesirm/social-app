@@ -37,7 +37,7 @@ export const friends = async (req, res) => {
 export const update = async (req, res) => {
 	const { id } = req.params
 	const { _id, username, email } = req.body
-	
+
 	try {
 		const self = await User.findById(id)
 		var user = await User.findById(_id)

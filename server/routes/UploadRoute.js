@@ -13,3 +13,4 @@ export default new Router()
 		try { return res.status(200).json('File uploaded successfully.') }
 		catch (err) { console.error(err) }
 	})
+	.all('*', (req, res) => res.status(405).json({ message: 'Method not allowed.' }))

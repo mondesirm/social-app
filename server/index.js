@@ -26,7 +26,7 @@ app.use('/scripts', express.static('scripts'))
 dotenv.config()
 
 // Connect to MongoDB
-mongoose.connect(process.env.DB_CONN, { useNewUrlParser: true, useUnifiedTopology: true })
+await mongoose.connect(process.env.DB_CONN, { useNewUrlParser: true, useUnifiedTopology: true })
 	.then(() => app.listen(process.env.SERVER_PORT, () => console.log(`Listening on port ${process.env.SERVER_PORT}.`)))
 	.catch((err) => console.log(`${err}\nFailed to connect to MongoDB.`))
 
@@ -37,5 +37,6 @@ app.use('/upload', UploadRoute)
 app.use('/chat', ChatRoute)
 app.use('/room', RoomRoute)
 app.use('/message', MessageRoute)
+app.use('/status', (req, res) => res.status(200).json({ message: 'API is running.' }))
 
 export default app

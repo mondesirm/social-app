@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
 // import User from '../models/User.js'
-import mongoose, { User } from '../models/index.js'
+import { User } from '../models/index.js'
 
 dotenv.config()
 
