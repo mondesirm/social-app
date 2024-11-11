@@ -10,7 +10,7 @@
   "scripts": {
     "migrate": "node --env-file=.env migrate.js",
     "start": "nodemon index.js",
-    "build": "node index.js"
+    "build": "node api/index.js"
   },
   "dependencies": {
     "async": "^3.2.6",
