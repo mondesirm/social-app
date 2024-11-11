@@ -38,4 +38,4 @@ app.use('/chat', ChatRoute)
 app.use('/room', RoomRoute)
 app.use('/message', MessageRoute)
 
-module.exports = app;
+export default app
