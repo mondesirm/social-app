@@ -7,9 +7,7 @@ import App from './App'
 const config = { initialColorMode: 'light', useSystemColorMode: false }
 const theme = extendTheme({ config })
 
-const root = createRoot(document.getElementById('root'))
-
-root.render(
+createRoot(document.getElementById('root')).render(
 	<StrictMode>
 		<ChakraProvider>
 			<ColorModeScript initialColorMode={theme.config.initialColorMode} />

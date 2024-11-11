@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/mondesirm/social-app#readme",
   "devDependencies": {
-    "eslint": "^8.29.0",
-    "eslint-plugin-react": "^7.31.11"
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.2"
   }
 }

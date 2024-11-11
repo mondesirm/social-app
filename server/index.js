@@ -37,3 +37,5 @@ app.use('/upload', UploadRoute)
 app.use('/chat', ChatRoute)
 app.use('/room', RoomRoute)
 app.use('/message', MessageRoute)
+
+module.exports = app;

@@ -8,39 +8,41 @@ import Chat from './models/Chat.js'
 import Room from './models/Room.js'
 import User from './models/User.js'
 import Brand from './models/Brand.js'
+import { exit } from 'process'
 
 // Get arguments and initialize variables
 const args = process.argv.slice(2)
 const dropped = []
-const collections = ['users', 'brands', 'rooms']
+const collections = ['users', 'chats', 'brands', 'rooms']
 const password = '$2b$10$mqv/8wKw5Kou4WdiNWCD8.BcRZgtfbGA92IFzRdw4dn5gpJPqos4K'
 var seed = false
 var mongoURL = process.env.DB_CONN
 
-args.forEach(arg => {
-	// If -h or --help is passed as argument then print help
-	if (arg == '-h' || arg == '--help' || arg == 'help') {
-		console.log('Usage: node migrate.js [<arg>] [...options]')
-		// Subcommands
-		console.log('\nArguments:')
-		console.log('help				Show this help message')
-		console.log('<URL>				MongoDB connection URL')
-		console.log('\nExamples:')
-		console.log('node migrate.js help')
-		console.log('node migrate.js mongodb[+srv]://<user>:<pass>@<host>[/<db>]')
-		console.log('node migrate.js -i coll2,coll3 -d')
-		console.log('\nOptions:')
-		console.log('[-h | --help]			Show this help message')
-		console.log('[-o | --only] <collections>	Only load the specified comma-separated collections')
-		console.log('[-i | --ignore] <collections>	Ignore the specified comma-separated collections')
-		console.log('[-d | --drop] [<collections>]	Drop all or the specified comma-separated before loading')
-		// if -o is passed with -i then ignore -i
-		console.log('\nNote: -i is ignored if -o is passed')
-		process.exit()
+const log = (str, code = 0) => console.log(`\x1b[${code}m%s\x1b[0m`, str)
+const info = (str) => log(str, 36)
+
+args.forEach((arg, i) => {
+	// Print help
+	if (/^-h|--help/.test(arg)) {
+		log('Usage: node migrate.js [<arg>] [...options]', 1)
+		log('\nArguments', 32)
+		log('help                           Show this help message')
+		log('<URL>                          MongoDB connection URL')
+		log('\nExamples', 32)
+		log('node migrate.js help')
+		log('node migrate.js -i coll2,coll3 -d')
+		log('node migrate.js mongodb[+srv]://<user>:<pass>@<host>[/<db>]')
+		log('\nOptions', 32)
+		log('[-h | --help]                  Show this help message')
+		log('[-o | --only] <collections>    Load only the specified comma-separated collections')
+		log('[-i | --ignore] <collections>  Ignore the specified comma-separated collections')
+		log('[-d | --drop] [<collections>]  Drop all or the specified comma-separated before loading')
+		info('\nNote: -i is ignored if -o is passed')
+		exit()
 	}
 
 	// If a mongodb URL is passed as argument then use it
-	if (arg.startsWith('url=')) {
+	if (/^mongodb(?:\+srv)?:\/\//.test(arg)) {
 		mongoURL = arg.split('=')[1]
 
 		// Regex to check if the URL scheme is valid
@@ -48,7 +50,7 @@ args.forEach(arg => {
 
 		if (!regex.test(mongoURL)) {
 			console.error('Your URL should start with `mongodb://` or `mongodb+srv://`.')
-			console.log('Your default URL is: ' + process.env.DB_CONN)
+			console.log('Your default URL is: \x1b[32m%s\x1b[0m', process.env.DB_CONN)
 
 			const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 
@@ -59,58 +61,52 @@ args.forEach(arg => {
 			})
 
 			// Fallback to the default URL
-			console.log(`Fallback to the default URL...`)
+			info('Fallback to the default URL...')
 			mongoURL = process.env.DB_CONN
 		}
 	}
 
-	// If specified, drop the collections before loading
-	if (arg.startsWith('drop')) {
-		const drop = arg.split('=')[1]?.split(',')
-		console.log(`Dropping collections: ${drop?.join(', ') || 'all'}`)
-		if (drop) drop.forEach(coll => { if (collections.includes(coll)) dropped.push(coll) })
+	// Drop the collections before loading
+	if (/^-d|--drop/.test(arg)) {
+		const colls = args[i + 1] && !/^-/.test(args[i + 1]) && args[i + 1].split(',')
+		if (colls) colls.forEach(_ => { if (collections.includes(_)) dropped.push(_) })
 		else dropped.push(...collections)
 	}
 
-	// If specified, load only the specified collections
-	if (arg.startsWith('only=')) {
+	// Load only the specified collections
+	if (/^(-o|--only)=*/.test(arg)) {
 		const colls = arg.split('=')[1].split(',')
-		console.log(`Only loading collections: ${colls.join(', ')}`)
-		collections.forEach((coll, i) => { if (!colls.includes(coll)) delete collections[i] })
+		collections.forEach((_, i) => { if (!colls.includes(_)) delete collections[i] })
 	}
 
-	// If specified and args has no only argument, ignore the specified collections 
-	if (arg.startsWith('ignore=') && args.some(arg => arg.startsWith('only='))) {
+	// Ignore the specified collections (unless only is passed)
+	if (/^-i|--ignore/.test(arg) && !/^(-o|--only)=*/.test(args)) {
 		const colls = arg.split('=')[1].split(',')
-		console.log(`Ignoring collections: ${colls.join(', ')}`)
-		collections.forEach((coll, i) => { if (colls.includes(coll)) delete collections[i] })
+		collections.forEach((_, i) => { if (colls.includes(_)) delete collections[i] })
 	}
 
 	// Seed the database
-	if (arg == '-s' || arg == '--seed' || arg == 'seed') {
-		console.log('Seeding database...')
-		seed = true
-	}
+	if (/^-s|--seed/.test(arg)) seed = true
 })
 
 mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
 mongoose.Promise = global.Promise
 
-const { connection } = mongoose
+const { connection: conn } = mongoose
 
-connection.on('error', () => {
-	console.error('Error connecting to MongoDB.')
+conn.on('error', () => {
+	console.error('Error connecting to MongoDB with:', mongoURL)
 	process.exit(1)
 })
 
-connection.once('open', () => {
+conn.once('open', () => {
+	info('Connected to MongoDB')
+
 	if (dropped.length) {
-		dropped.forEach(collection => {
-			connection.db.dropCollection(collection, err => {
-				console.log(`Collection ${collection} ${err ? 'does not exist' : 'dropped'}.`)
-			})
-		})
+		dropped.forEach(_ => conn.db.dropCollection(_, err => info(`Collection ${_} ${err ? 'does not exist, ' : 'dropped, re'}creating...`)))
 	}
+
+	// info('Creating collections...')
 })
 
 const Fixtures = (collections, callback = () => {}, seed = false) => {
@@ -124,7 +120,7 @@ const Fixtures = (collections, callback = () => {}, seed = false) => {
 	const user = (username, email, password, firstName, lastName, roles, rooms, following, followers, cb) => {
 		const user = new User({
 			username: username,
-			email: email,	
+			email: email,
 			password: password,
 			firstName: firstName,
 			lastName: lastName,
@@ -133,13 +129,13 @@ const Fixtures = (collections, callback = () => {}, seed = false) => {
 			following: following,
 			followers: followers
 		})
-	
+
 		user.save(function (err) {
 			if (err) {
 				cb(err, null)
 				return
 			}
-	
+
 			console.log('\n' + user.username + ':' + user._id)
 			data.users.push(user)
 			cb(null, user)
@@ -148,7 +144,7 @@ const Fixtures = (collections, callback = () => {}, seed = false) => {
 
 	const chat = (members, cb) => {
 		const chat = new Chat({ members })
-	
+
 		chat.save(function (err) {
 			if (err) {
 				cb(err, null)
@@ -199,7 +195,7 @@ const Fixtures = (collections, callback = () => {}, seed = false) => {
 				member.rooms.push(room)
 				member.updateOne({ rooms: member.rooms }, err => { if (err) console.log(err.message) })
 			})
-	
+
 			data.rooms.push(room)
 			cb(null, room)
 		})
@@ -259,10 +255,11 @@ const Fixtures = (collections, callback = () => {}, seed = false) => {
 			async.series(seeders, err => {
 				if (err) console.log('\nError loading fixtures: ' + err)
 				else {
-					console.log('\n' + data.users.length + ' users')
-					console.log(data.chats.length + ' chats')
-					console.log(data.brands.length + ' brands')
-					console.log(data.rooms.length + ' rooms')
+					info('Database seeded successfully')
+					info('\n' + data.users.length + ' users')
+					info(data.chats.length + ' chats')
+					info(data.brands.length + ' brands')
+					info(data.rooms.length + ' rooms')
 				}
 			})
 		}
@@ -282,4 +279,4 @@ const Fixtures = (collections, callback = () => {}, seed = false) => {
 	load(seeders, callback, seed)
 }
 
-Fixtures(collections, () => connection.close(), seed)
+Fixtures(collections, () => conn.close(), seed)
